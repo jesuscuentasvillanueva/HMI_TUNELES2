@@ -17,6 +17,7 @@ class Poller(QObject):
         super().__init__()
         self.plc = plc
         self.tunnels = tunnels
+        self.tunnels_map: Dict[int, TunnelConfig] = {t.id: t for t in tunnels}
         self.interval_ms = int(max(200, interval_ms))
         self._timer: Optional[QTimer] = None
         self._running = False
@@ -48,7 +49,18 @@ class Poller(QObject):
             status = self.plc.is_connected()
             self._emit_status(status)
             if data:
-                # Convertir TunnelData a dict serializable si fuera necesario; aquí lo pasamos tal cual
+                # Aplicar calibraciones por túnel antes de emitir
+                for tid, td in data.items():
+                    cfg = self.tunnels_map.get(tid)
+                    if cfg and getattr(cfg, "calibrations", None):
+                        cal = cfg.calibrations
+                        try:
+                            td.temp_ambiente = float(td.temp_ambiente) + float(cal.get("temp_ambiente", 0.0))
+                            td.temp_pulpa1 = float(td.temp_pulpa1) + float(cal.get("temp_pulpa1", 0.0))
+                            td.temp_pulpa2 = float(td.temp_pulpa2) + float(cal.get("temp_pulpa2", 0.0))
+                        except Exception:
+                            pass
+                # Emitir
                 self.updated.emit(data)
         except Exception:
             self._emit_status(False)
@@ -68,5 +80,29 @@ class Poller(QObject):
             ok = self.plc.write_estado(tunnel_id, value)
             if not ok:
                 self._emit_status(False)
+        except Exception:
+            self._emit_status(False)
+
+    @pyqtSlot(int, dict)
+    def update_tunnel_tags(self, tunnel_id: int, tags: dict):
+        """Actualizar los tags de un túnel en el PLC activo (en caliente)."""
+        try:
+            if tunnel_id in self.plc.tunnels_map:
+                self.plc.tunnels_map[tunnel_id].tags = tags
+            if tunnel_id in self.tunnels_map:
+                self.tunnels_map[tunnel_id].tags = tags
+        except Exception:
+            # Si falla, no derribar; el siguiente ciclo reportará estado
+            self._emit_status(False)
+
+    @pyqtSlot(int, dict)
+    def update_tunnel_calibrations(self, tunnel_id: int, cal: dict):
+        """Actualizar calibraciones (offsets) en caliente."""
+        try:
+            if tunnel_id in self.tunnels_map:
+                self.tunnels_map[tunnel_id].calibrations = cal
+            if tunnel_id in self.plc.tunnels_map:
+                # Mantener en el objeto también
+                self.plc.tunnels_map[tunnel_id].calibrations = cal
         except Exception:
             self._emit_status(False)

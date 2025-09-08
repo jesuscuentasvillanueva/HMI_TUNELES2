@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
 )
 
 from ..config import ConfigManager
-from ..models import PLCConfig, TunnelConfig, TunnelData
+from ..models import PLCConfig, TunnelConfig, TunnelData, AppConfig
 from .dashboard_view import DashboardView
 from .tunnel_detail_view import TunnelDetailView
 from .settings_view import SettingsView
@@ -27,6 +27,8 @@ class MainWindow(QMainWindow):
     request_setpoint = pyqtSignal(int, float)
     request_estado = pyqtSignal(int, bool)
     apply_settings = pyqtSignal(object)
+    update_tunnel_tags = pyqtSignal(int, dict)
+    update_tunnel_calibrations = pyqtSignal(int, dict)
 
     def __init__(self, tunnels: List[TunnelConfig], initial_plc_connected: bool = False):
         super().__init__()
@@ -61,13 +63,12 @@ class MainWindow(QMainWindow):
         self.lbl_update.setObjectName("UpdateLabel")
 
         btn_go_dashboard = QPushButton("Tablero")
+        btn_go_dashboard.setProperty("size", "lg")
+        btn_go_dashboard.setMinimumHeight(44)
         btn_settings = QPushButton("Configuración")
+        btn_settings.setProperty("size", "lg")
+        btn_settings.setMinimumHeight(44)
         btn_settings.setObjectName("Primary")
-
-        # Toggle de densidad
-        self.btn_density = QPushButton("Denso")
-        self.btn_density.setObjectName("DensityToggle")
-        self.btn_density.setCheckable(True)
 
         top.addWidget(self.lbl_status)
         top.addSpacing(12)
@@ -77,7 +78,6 @@ class MainWindow(QMainWindow):
         top.addStretch(1)
         top.addWidget(btn_go_dashboard)
         top.addWidget(btn_settings)
-        top.addWidget(self.btn_density)
 
         root.addWidget(top_frame)
 
@@ -88,7 +88,8 @@ class MainWindow(QMainWindow):
         self.view_detail = TunnelDetailView()
 
         # Settings view con config actual
-        cfg = ConfigManager().load_or_create_default()
+        self._cfg_manager = ConfigManager()
+        cfg = self._cfg_manager.load_or_create_default()
         self.view_settings = SettingsView(cfg.plc)
 
         self.stack.addWidget(self.view_dashboard)  # index 0
@@ -102,11 +103,14 @@ class MainWindow(QMainWindow):
         self.view_settings.back.connect(lambda: self._navigate(0))
         btn_go_dashboard.clicked.connect(lambda: self._navigate(0))
         btn_settings.clicked.connect(lambda: self._navigate(2))
-        self.btn_density.toggled.connect(self._toggle_density)
 
         # Reenvío de acciones de detalle hacia afuera
         self.view_detail.request_setpoint.connect(self.request_setpoint)
         self.view_detail.request_estado.connect(self.request_estado)
+        self.view_detail.update_tunnel_tags.connect(self._on_update_tunnel_tags)
+        self.view_detail.update_tunnel_tags.connect(self.update_tunnel_tags)
+        self.view_detail.update_tunnel_calibrations.connect(self._on_update_tunnel_calibrations)
+        self.view_detail.update_tunnel_calibrations.connect(self.update_tunnel_calibrations)
 
         # Aplicación de configuración
         self.view_settings.apply_settings.connect(self._apply_settings_and_back)
@@ -153,8 +157,26 @@ class MainWindow(QMainWindow):
             self.lbl_update.setText(f"Últ. act.: {strftime('%H:%M:%S', localtime())}")
         except Exception:
             pass
+        # Si estamos en el detalle y hay datos del túnel actual, refrescar
         if self._current_tunnel_id and self._current_tunnel_id in data:
-            self.view_detail.update_data(data[self._current_tunnel_id])
+            try:
+                self.view_detail.update_data(data[self._current_tunnel_id])
+            except Exception:
+                pass
+
+    def _on_update_tunnel_calibrations(self, tunnel_id: int, cal: dict):
+        # Guardar en config.json y en memoria local
+        try:
+            app_cfg = self._cfg_manager.load_or_create_default()
+            for t in app_cfg.tunnels:
+                if t.id == tunnel_id:
+                    t.calibrations = cal
+                    break
+            self._cfg_manager.save(app_cfg)
+            if tunnel_id in self.tunnels_map:
+                self.tunnels_map[tunnel_id].calibrations = cal
+        except Exception:
+            pass
 
     def on_plc_status(self, connected: bool):
         if connected:
@@ -167,10 +189,20 @@ class MainWindow(QMainWindow):
         self.lbl_status.style().unpolish(self.lbl_status)
         self.lbl_status.style().polish(self.lbl_status)
 
-    def _toggle_density(self, checked: bool):
-        # True => compacto
-        self.view_dashboard.set_density(checked)
-        self.btn_density.setText("Cómodo" if checked else "Denso")
-
     def _tick_clock(self):
         self.lbl_clock.setText(strftime("%H:%M:%S", localtime()))
+
+    def _on_update_tunnel_tags(self, tunnel_id: int, tags: dict):
+        # Actualizar en memoria
+        if tunnel_id in self.tunnels_map:
+            self.tunnels_map[tunnel_id].tags = tags
+        # Persistir en config.json
+        try:
+            app_cfg = self._cfg_manager.load_or_create_default()
+            for t in app_cfg.tunnels:
+                if t.id == tunnel_id:
+                    t.tags = tags
+                    break
+            self._cfg_manager.save(app_cfg)
+        except Exception:
+            pass

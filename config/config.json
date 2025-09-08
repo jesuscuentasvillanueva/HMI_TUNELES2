@@ -16,32 +16,42 @@
           "db": 101,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 101,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 101,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 201,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 301,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
+      },
+      "calibrations": {
+        "temp_ambiente": 0.0,
+        "temp_pulpa1": 0.0,
+        "temp_pulpa2": 0.0
       }
     },
     {
@@ -52,33 +62,39 @@
           "db": 102,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 102,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 102,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 202,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 302,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 3,
@@ -88,33 +104,39 @@
           "db": 103,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 103,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 103,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 203,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 303,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 4,
@@ -124,33 +146,39 @@
           "db": 104,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 104,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 104,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 204,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 304,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 5,
@@ -160,33 +188,39 @@
           "db": 105,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 105,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 105,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 205,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 305,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 6,
@@ -196,33 +230,39 @@
           "db": 106,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 106,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 106,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 206,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 306,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 7,
@@ -232,33 +272,39 @@
           "db": 107,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 107,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 107,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 207,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 307,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 8,
@@ -268,33 +314,39 @@
           "db": 108,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 108,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 108,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 208,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 308,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 9,
@@ -304,33 +356,39 @@
           "db": 109,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 109,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 109,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 209,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 309,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 10,
@@ -340,33 +398,39 @@
           "db": 110,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 110,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 110,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 210,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 310,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 11,
@@ -376,33 +440,39 @@
           "db": 111,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 111,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 111,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 211,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 311,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 12,
@@ -412,33 +482,39 @@
           "db": 112,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 112,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 112,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 212,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 312,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 13,
@@ -448,33 +524,39 @@
           "db": 113,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 113,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 113,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 213,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 313,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     },
     {
       "id": 14,
@@ -484,33 +566,39 @@
           "db": 114,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa1": {
           "db": 114,
           "start": 4,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "temp_pulpa2": {
           "db": 114,
           "start": 8,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "setpoint": {
           "db": 214,
           "start": 0,
           "type": "REAL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         },
         "estado": {
           "db": 314,
           "start": 0,
           "type": "BOOL",
-          "bit": 0
+          "bit": 0,
+          "area": "DB"
         }
-      }
+      },
+      "calibrations": {}
     }
   ]
 }

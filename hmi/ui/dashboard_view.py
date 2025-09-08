@@ -23,6 +23,11 @@ class DashboardView(QWidget):
         for t in self.tunnels:
             card = TunnelCard(t)
             card.clicked.connect(self.tunnel_clicked)
+            # Recalcular alturas de fila cuando cambie la altura de contenido de una tarjeta
+            try:
+                card.content_height_changed.connect(lambda _h, self=self: self._apply_uniform_sizes())
+            except Exception:
+                pass
             self.cards[t.id] = card
         self._build_ui()
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -33,8 +38,8 @@ class DashboardView(QWidget):
     def _build_ui(self):
         grid = QGridLayout(self)
         grid.setContentsMargins(8, 8, 8, 8)
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(10)
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(12)
         columns = 4  # valor inicial
         self._grid = grid
         self._columns = columns
@@ -55,10 +60,7 @@ class DashboardView(QWidget):
             r = idx // columns
             c = idx % columns
             self._grid.addWidget(self.cards[t.id], r, c)
-        # Estirar TODAS las filas y columnas por igual para uso uniforme del espacio
-        rows = (len(self.tunnels) + columns - 1) // columns
-        for r in range(max(1, rows)):
-            self._grid.setRowStretch(r, 1)
+        # Estirar solo columnas
         for c in range(max(1, columns)):
             self._grid.setColumnStretch(c, 1)
         self._apply_uniform_sizes()
@@ -68,13 +70,13 @@ class DashboardView(QWidget):
         m = self._grid.contentsMargins()
         avail_w = max(0, self.width() - (m.left() + m.right()))
         spacing = self._grid.horizontalSpacing() or 0
-        min_card_w = 180 if self._compact else 200
+        min_card_w = 180 if self._compact else 240
         # Probar cuántas tarjetas entran por fila
         if avail_w <= 0:
             return
         # columns = floor((avail_w + spacing) / (min_card_w + spacing))
         base_min = 3 if self._compact else 4
-        columns = max(base_min, min(8, (avail_w + spacing) // (min_card_w + spacing)))
+        columns = max(base_min, min(6, (avail_w + spacing) // (min_card_w + spacing)))
         columns = int(columns)
         if columns != self._columns:
             self._columns = columns
@@ -83,13 +85,28 @@ class DashboardView(QWidget):
     def _apply_uniform_sizes(self):
         if not hasattr(self, "_grid"):
             return
-        rows = max(1, ceil(len(self.tunnels) / float(self._columns)))
+        columns = max(1, self._columns)
+        rows = (len(self.tunnels) + columns - 1) // columns
+        if rows <= 0:
+            return
         m = self._grid.contentsMargins()
-        avail_h = max(0, self.height() - (m.top() + m.bottom()) - self._grid.verticalSpacing() * (rows - 1))
-        # Usar altura mínima para evitar recortes, dejando que el layout expanda según el espacio
-        row_min = max(140 if getattr(self, "_compact", False) else 160, avail_h // rows)
+        spacing = self._grid.verticalSpacing() or 0
+        avail_h = max(0, self.height() - (m.top() + m.bottom()) - spacing * (rows - 1))
+        # Altura objetivo por tarjeta para que TODAS quepan sin scroll
+        row_h = max(120, avail_h // rows)
+        for r in range(rows):
+            self._grid.setRowMinimumHeight(r, int(row_h))
+        # Aplicar a cada tarjeta y dejar que se adapte internamente
         for card in self.cards.values():
-            card.setMinimumHeight(int(row_min))
+            try:
+                if hasattr(card, "apply_target_height"):
+                    card.apply_target_height(int(row_h))
+                card.setFixedHeight(int(row_h))
+            except Exception:
+                pass
+
+    def _update_container_min_height(self):
+        return
 
     def set_density(self, compact: bool):
         self._compact = bool(compact)
@@ -102,16 +119,19 @@ class DashboardView(QWidget):
         super().resizeEvent(event)
         self._update_columns()
         self._apply_uniform_sizes()
+        self._update_container_min_height()
 
     def showEvent(self, event):
         super().showEvent(event)
         # Asegura cálculo inicial correcto según ancho real
         self._update_columns()
         self._apply_uniform_sizes()
+        self._update_container_min_height()
 
     def _deferred_layout_update(self):
         self._update_columns()
         self._apply_uniform_sizes()
+        self._update_container_min_height()
 
     def update_data(self, data: Dict[int, TunnelData]):
         for tid, td in data.items():

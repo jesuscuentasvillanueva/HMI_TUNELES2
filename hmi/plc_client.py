@@ -41,6 +41,10 @@ class Snap7PLC(BasePLC):
         try:
             from snap7.client import Client  # type: ignore
             from snap7.util import get_real, set_real, get_bool, set_bool  # type: ignore
+            try:
+                from snap7.types import Areas as _Areas  # type: ignore
+            except Exception:
+                from snap7.snap7types import Areas as _Areas  # type: ignore
         except Exception as e:
             raise RuntimeError(f"python-snap7 no disponible: {e}")
         self._Client = Client
@@ -48,6 +52,18 @@ class Snap7PLC(BasePLC):
         self._set_real = set_real
         self._get_bool = get_bool
         self._set_bool = set_bool
+        # Áreas (DB, I=PE, Q=PA, M=MK) con fallback numérico
+        try:
+            self._Areas = _Areas
+            # probar atributos
+            _ = (_Areas.DB, _Areas.PE, _Areas.PA, _Areas.MK)
+        except Exception:
+            class _FallbackAreas:
+                DB = 0x84
+                PE = 0x81
+                PA = 0x82
+                MK = 0x83
+            self._Areas = _FallbackAreas
         self.client = self._Client()
         self._connected = False
 
@@ -75,14 +91,27 @@ class Snap7PLC(BasePLC):
 
     def _read_tag(self, tag: TagAddress) -> Optional[Union[float, bool]]:
         try:
+            area = getattr(tag, "area", "DB").upper()
+            if area == "DB":
+                area_const = self._Areas.DB
+                dbnum = tag.db
+            elif area == "I":
+                area_const = self._Areas.PE
+                dbnum = 0
+            elif area == "Q":
+                area_const = self._Areas.PA
+                dbnum = 0
+            else:  # M
+                area_const = self._Areas.MK
+                dbnum = 0
+
             if tag.type.upper() == "REAL":
-                data = self.client.db_read(tag.db, tag.start, 4)
+                data = self.client.read_area(area_const, dbnum, tag.start, 4)
                 return float(self._get_real(data, 0))
             elif tag.type.upper() == "BOOL":
-                data = self.client.db_read(tag.db, tag.start, 1)
+                data = self.client.read_area(area_const, dbnum, tag.start, 1)
                 return bool(self._get_bool(data, 0, tag.bit))
             else:
-                # Tipo no soportado
                 return None
         except Exception as e:
             self._last_error = f"Lectura fallida DB{tag.db}.{tag.start}/{tag.type}: {e}"
@@ -91,17 +120,31 @@ class Snap7PLC(BasePLC):
 
     def _write_tag(self, tag: TagAddress, value) -> bool:
         try:
+            area = getattr(tag, "area", "DB").upper()
+            if area == "DB":
+                area_const = self._Areas.DB
+                dbnum = tag.db
+            elif area == "I":
+                area_const = self._Areas.PE
+                dbnum = 0
+            elif area == "Q":
+                area_const = self._Areas.PA
+                dbnum = 0
+            else:  # M
+                area_const = self._Areas.MK
+                dbnum = 0
+
             if tag.type.upper() == "REAL":
                 b = bytearray(4)
                 self._set_real(b, 0, float(value))
-                self.client.db_write(tag.db, tag.start, b)
+                self.client.write_area(area_const, dbnum, tag.start, b)
                 return True
             elif tag.type.upper() == "BOOL":
                 # leer byte actual para preservar otros bits
-                current = self.client.db_read(tag.db, tag.start, 1)
+                current = self.client.read_area(area_const, dbnum, tag.start, 1)
                 b = bytearray(current)
                 self._set_bool(b, 0, tag.bit, bool(value))
-                self.client.db_write(tag.db, tag.start, b)
+                self.client.write_area(area_const, dbnum, tag.start, b)
                 return True
             else:
                 return False

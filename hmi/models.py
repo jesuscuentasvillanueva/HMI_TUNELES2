@@ -9,6 +9,7 @@ class TagAddress:
     start: int
     type: str  # "REAL" or "BOOL"
     bit: int = 0
+    area: str = "DB"  # "DB", "I", "Q", "M"
 
 
 @dataclass
@@ -16,6 +17,7 @@ class TunnelConfig:
     id: int
     name: str
     tags: Dict[str, TagAddress]
+    calibrations: Dict[str, float] = field(default_factory=dict)  # offsets por señal
 
 
 @dataclass

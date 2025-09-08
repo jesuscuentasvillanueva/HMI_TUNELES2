@@ -56,6 +56,7 @@ def main():
 
     window.request_setpoint.connect(poller.write_setpoint)
     window.request_estado.connect(poller.write_estado)
+    window.update_tunnel_tags.connect(poller.update_tunnel_tags)
 
     def apply_settings(new_plc_cfg):
         # Guardar y reiniciar infraestructura
@@ -82,6 +83,7 @@ def main():
         poller.plc_status_changed.connect(window.on_plc_status)
         window.request_setpoint.connect(poller.write_setpoint)
         window.request_estado.connect(poller.write_estado)
+        window.update_tunnel_tags.connect(poller.update_tunnel_tags)
 
         # Iniciar
         poller_thread.started.connect(poller.start)

@@ -97,7 +97,7 @@ QLabel[class="metricLabel"] {
 
 QLabel[class="metricValue"] {
   color: #e5eef6;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   font-family: "Segoe UI", "Ubuntu", "DejaVu Sans", sans-serif;
   padding: 1px 0 2px 0; /* evita recorte superior/inferior */
@@ -117,6 +117,18 @@ QFrame#CardHeader {
   background-color: rgba(255,255,255,0.02);
   border: 1px solid #1e2a33;
   border-radius: 8px;
+}
+
+/* Header del detalle del túnel */
+QFrame#DetailHeader {
+  background-color: rgba(255,255,255,0.02);
+  border: 1px solid #1e2a33;
+  border-radius: 10px;
+}
+
+QFrame#DetailHeader[on="true"] {
+  border-color: #0e4a56;
+  background-color: rgba(0, 207, 224, 0.06);
 }
 
 /* Punto de estado circular */
@@ -229,6 +241,13 @@ QLabel#StateTag[state="off"] {
   border: 1px solid #7f1d1d;
 }
 
+/* Tamaño grande para el chip de estado en el detalle */
+QLabel#StateTag[size="xl"] {
+  font-size: 16px;
+  padding: 6px 12px;
+  min-height: 28px;
+}
+
 QLineEdit, QDoubleSpinBox, QSpinBox {
   background-color: #0f1316;
   border: 1px solid #26313a;
@@ -242,4 +261,61 @@ QCheckBox {
 
 QStatusBar {
   background-color: #0f1316;
+}
+
+/* Tag badges for PLC addresses */
+QLabel#TagBadge {
+  background-color: #0e1720;
+  border: 1px solid #253443;
+  color: #9fcbe0;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* --- Touch-friendly sizes --- */
+QPushButton[size="xl"] {
+  font-size: 20px;
+  padding: 14px 18px;
+  border-radius: 10px;
+}
+
+QPushButton[size="lg"] {
+  font-size: 18px;
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+
+/* Keep visual variant color while enlarging */
+QPushButton#Primary[size="xl"], QPushButton#Primary[size="lg"] {
+  background-color: #00a9c7;
+  border: 1px solid #00a9c7;
+  color: #081015;
+}
+QPushButton#Danger[size="xl"], QPushButton#Danger[size="lg"] {
+  background-color: #b91c1c;
+  border: 1px solid #b91c1c;
+  color: #fff;
+}
+
+/* Card action button */
+QPushButton#CardAction {
+  background-color: #1d2932;
+  border: 1px solid #2a3a45;
+  color: #dbe7f0;
+  font-weight: 600;
+}
+QPushButton#CardAction:hover {
+  border-color: #00e5ff;
+}
+
+/* Big spinbox */
+QDoubleSpinBox[size="xl"] {
+  font-size: 22px;
+  padding: 8px 12px;
+  min-height: 56px;
+}
+QDoubleSpinBox[size="xl"]::up-button,
+QDoubleSpinBox[size="xl"]::down-button {
+  width: 28px;
 }

@@ -27,7 +27,8 @@ class ConfigManager:
         tunnels_list = []
         for t in data.get("tunnels", []):
             tags = {k: TagAddress(**v) for k, v in t.get("tags", {}).items()}
-            tunnels_list.append(TunnelConfig(id=t["id"], name=t["name"], tags=tags))
+            calibrations = t.get("calibrations", {})
+            tunnels_list.append(TunnelConfig(id=t["id"], name=t["name"], tags=tags, calibrations=calibrations))
         return AppConfig(plc=plc, tunnels=tunnels_list)
 
     def save(self, cfg: AppConfig) -> None:
@@ -38,6 +39,7 @@ class ConfigManager:
                     "id": t.id,
                     "name": t.name,
                     "tags": {k: asdict(v) for k, v in t.tags.items()},
+                    "calibrations": t.calibrations,
                 }
                 for t in cfg.tunnels
             ],
