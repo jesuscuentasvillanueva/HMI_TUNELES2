@@ -1,0 +1,245 @@
+/* Tema oscuro industrial */
+
+QWidget {
+  background-color: #0f1316;
+  color: #e0e6ed;
+  font-family: "Segoe UI", "Ubuntu", "DejaVu Sans", sans-serif;
+  font-size: 14px;
+}
+
+QMainWindow {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #0f1316,
+    stop:1 #0b1013);
+}
+
+QStackedWidget {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #0f1316,
+    stop:1 #0c1216);
+}
+
+/* Top bar */
+QFrame#TopBar {
+  background-color: rgba(255,255,255,0.03);
+  border: 1px solid #1e2a33;
+  border-radius: 10px;
+}
+
+QLabel#TopStatusLabel[connected="true"] {
+  color: #10b981;
+  font-weight: 700;
+}
+
+QLabel#TopStatusLabel[connected="false"] {
+  color: #f87171;
+  font-weight: 700;
+}
+
+QPushButton#DensityToggle {
+  background-color: #1f2a33;
+  border: 1px solid #2f3b46;
+}
+
+QPushButton#DensityToggle:checked {
+  background-color: #0b2530;
+  border: 1px solid #00a9c7;
+}
+
+QFrame#TunnelCard {
+  background-color: #151a1f;
+  border: 1px solid #26313a;
+  border-radius: 10px;
+}
+
+QFrame#TunnelCard:hover {
+  border: 1px solid #00e5ff;
+  background-color: #1a2026;
+}
+
+/* Borde reactivo cuando el túnel está encendido */
+QFrame#TunnelCard[on="true"] {
+  border: 1px solid #00cfe0;
+  background-color: #152128;
+}
+
+QFrame#CardHeader[on="true"] {
+  border-color: #0e4a56;
+  background-color: rgba(0, 207, 224, 0.06);
+}
+
+QLabel[class="sectionTitle"] {
+  color: #9fb0bf;
+  font-size: 12px;
+}
+
+QLabel[class="bigValue"] {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+/* Títulos y métricas dentro de tarjetas */
+QLabel#CardTitle {
+  margin-bottom: 8px;
+}
+
+QLabel[class="metric"] {
+  color: #c7d2da;
+  font-size: 16px;
+  font-family: "DejaVu Sans Mono", "Ubuntu Mono", monospace;
+}
+
+QLabel[class="metricLabel"] {
+  color: #96a7b5;
+  font-size: 12px;
+  font-family: "Segoe UI", "Ubuntu", "DejaVu Sans", sans-serif;
+}
+
+QLabel[class="metricValue"] {
+  color: #e5eef6;
+  font-size: 20px;
+  font-weight: 600;
+  font-family: "Segoe UI", "Ubuntu", "DejaVu Sans", sans-serif;
+  padding: 1px 0 2px 0; /* evita recorte superior/inferior */
+}
+
+/* Nivel sobre/bajo SP en valores */
+QLabel[class="metricValue"][level="high"] {
+  color: #fb7185;
+}
+
+QLabel[class="metricValue"][level="low"] {
+  color: #60a5fa;
+}
+
+/* Header dentro de la tarjeta */
+QFrame#CardHeader {
+  background-color: rgba(255,255,255,0.02);
+  border: 1px solid #1e2a33;
+  border-radius: 8px;
+}
+
+/* Punto de estado circular */
+QLabel#StatusDot {
+  background-color: #6b7280; /* apagado por defecto */
+  border-radius: 5px;
+  min-width: 10px;
+  min-height: 10px;
+  max-width: 10px;
+  max-height: 10px;
+}
+
+QLabel#StatusDot[state="on"] {
+  background-color: #10b981;
+}
+
+QLabel#StatusDot[state="off"] {
+  background-color: #6b7280;
+}
+
+/* Colores por nivel en métricas (comparadas con setpoint) */
+QLabel[class="metric"][level="high"] { /* por encima del SP */
+  color: #fb7185; /* rose-400 */
+}
+
+QLabel[class="metric"][level="low"] { /* por debajo del SP */
+  color: #60a5fa; /* blue-400 */
+}
+
+/* Densidad compacta ajusta tamaño de fuente */
+QFrame#TunnelCard[density="compact"] QLabel[class="metricValue"] { font-size: 16px; }
+QFrame#TunnelCard[density="compact"] QLabel[class="metricLabel"] { font-size: 11px; }
+
+/* Barras de métrica (tendencia vs SP) */
+QProgressBar#MetricBar {
+  background-color: #0f1316;
+  border: 1px solid #23303a;
+  border-radius: 4px;
+  height: 8px;
+}
+
+QProgressBar#MetricBar::chunk {
+  background-color: #00a9c7;
+  border-radius: 4px;
+}
+
+QProgressBar#MetricBar[level="high"]::chunk {
+  background-color: #f87171;
+}
+
+QProgressBar#MetricBar[level="low"]::chunk {
+  background-color: #60a5fa;
+}
+
+QPushButton {
+  background-color: #1f2a33;
+  color: #e0e6ed;
+  border: 1px solid #2f3b46;
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+
+QPushButton:hover {
+  border: 1px solid #00e5ff;
+}
+
+QPushButton:pressed {
+  background-color: #192128;
+}
+
+QPushButton#Primary {
+  background-color: #00a9c7;
+  border: 1px solid #00a9c7;
+  color: #081015;
+  font-weight: 600;
+}
+
+QPushButton#Primary:hover {
+  background-color: #00bcd4;
+}
+
+QPushButton#Danger {
+  background-color: #b91c1c;
+  border: 1px solid #b91c1c;
+  color: #fff;
+  font-weight: 600;
+}
+
+QPushButton#Danger:hover {
+  background-color: #dc2626;
+}
+
+/* Estado del túnel como "chip" */
+QLabel#StateTag {
+  padding: 2px 10px;
+  border-radius: 8px;
+  min-height: 18px;
+  font-weight: 600;
+}
+
+QLabel#StateTag[state="on"] {
+  background-color: #103b2b;
+  color: #10b981;
+  border: 1px solid #135e43;
+}
+
+QLabel#StateTag[state="off"] {
+  background-color: #3a1b1b;
+  color: #fca5a5;
+  border: 1px solid #7f1d1d;
+}
+
+QLineEdit, QDoubleSpinBox, QSpinBox {
+  background-color: #0f1316;
+  border: 1px solid #26313a;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+QCheckBox {
+  padding: 4px;
+}
+
+QStatusBar {
+  background-color: #0f1316;
+}

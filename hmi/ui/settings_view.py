@@ -1,0 +1,96 @@
+from __future__ import annotations
+
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QSpinBox,
+    QCheckBox,
+    QPushButton,
+)
+
+from ..models import PLCConfig
+
+
+class SettingsView(QWidget):
+    apply_settings = pyqtSignal(object)
+    back = pyqtSignal()
+
+    def __init__(self, plc_cfg: PLCConfig):
+        super().__init__()
+        self._build_ui()
+        self.set_values(plc_cfg)
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+
+        title = QLabel("Configuración de Conexión")
+        title.setStyleSheet("font-size: 20px; font-weight: 700;")
+        layout.addWidget(title)
+
+        # Controles
+        self.ed_ip = QLineEdit()
+        self.ed_ip.setPlaceholderText("IP del PLC (ej: 192.168.0.1)")
+
+        self.sp_rack = QSpinBox()
+        self.sp_rack.setRange(0, 10)
+
+        self.sp_slot = QSpinBox()
+        self.sp_slot.setRange(0, 10)
+
+        self.sp_port = QSpinBox()
+        self.sp_port.setRange(1, 65535)
+
+        self.sp_poll = QSpinBox()
+        self.sp_poll.setRange(200, 30000)
+        self.sp_poll.setSingleStep(100)
+
+        self.chk_sim = QCheckBox("Simulación")
+
+        def add_row(label: str, w):
+            row = QHBoxLayout()
+            row.addWidget(QLabel(label))
+            row.addWidget(w)
+            layout.addLayout(row)
+
+        add_row("IP:", self.ed_ip)
+        add_row("Rack:", self.sp_rack)
+        add_row("Slot:", self.sp_slot)
+        add_row("Puerto:", self.sp_port)
+        add_row("Intervalo (ms):", self.sp_poll)
+        add_row("Modo:", self.chk_sim)
+
+        # Botones
+        btns = QHBoxLayout()
+        self.btn_apply = QPushButton("Aplicar")
+        self.btn_apply.setObjectName("Primary")
+        self.btn_back = QPushButton("Volver")
+        btns.addWidget(self.btn_apply)
+        btns.addWidget(self.btn_back)
+        layout.addLayout(btns)
+
+        # Conexiones
+        self.btn_back.clicked.connect(self.back.emit)
+        self.btn_apply.clicked.connect(self._emit_apply)
+
+    def set_values(self, cfg: PLCConfig):
+        self.ed_ip.setText(cfg.ip)
+        self.sp_rack.setValue(cfg.rack)
+        self.sp_slot.setValue(cfg.slot)
+        self.sp_port.setValue(cfg.port)
+        self.sp_poll.setValue(cfg.poll_interval_ms)
+        self.chk_sim.setChecked(cfg.simulation)
+
+    def _emit_apply(self):
+        cfg = PLCConfig(
+            ip=self.ed_ip.text().strip() or "192.168.0.1",
+            rack=int(self.sp_rack.value()),
+            slot=int(self.sp_slot.value()),
+            port=int(self.sp_port.value()),
+            poll_interval_ms=int(self.sp_poll.value()),
+            simulation=bool(self.chk_sim.isChecked()),
+        )
+        self.apply_settings.emit(cfg)

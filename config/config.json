@@ -1,0 +1,516 @@
+{
+  "plc": {
+    "ip": "192.168.0.1",
+    "rack": 0,
+    "slot": 1,
+    "port": 102,
+    "poll_interval_ms": 1000,
+    "simulation": false
+  },
+  "tunnels": [
+    {
+      "id": 1,
+      "name": "Túnel 1",
+      "tags": {
+        "temp_ambiente": {
+          "db": 101,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 101,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 101,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 201,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 301,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Túnel 2",
+      "tags": {
+        "temp_ambiente": {
+          "db": 102,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 102,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 102,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 202,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 302,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Túnel 3",
+      "tags": {
+        "temp_ambiente": {
+          "db": 103,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 103,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 103,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 203,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 303,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Túnel 4",
+      "tags": {
+        "temp_ambiente": {
+          "db": 104,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 104,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 104,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 204,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 304,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Túnel 5",
+      "tags": {
+        "temp_ambiente": {
+          "db": 105,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 105,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 105,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 205,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 305,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Túnel 6",
+      "tags": {
+        "temp_ambiente": {
+          "db": 106,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 106,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 106,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 206,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 306,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "Túnel 7",
+      "tags": {
+        "temp_ambiente": {
+          "db": 107,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 107,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 107,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 207,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 307,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "Túnel 8",
+      "tags": {
+        "temp_ambiente": {
+          "db": 108,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 108,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 108,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 208,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 308,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "Túnel 9",
+      "tags": {
+        "temp_ambiente": {
+          "db": 109,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 109,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 109,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 209,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 309,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Túnel 10",
+      "tags": {
+        "temp_ambiente": {
+          "db": 110,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 110,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 110,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 210,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 310,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Túnel 11",
+      "tags": {
+        "temp_ambiente": {
+          "db": 111,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 111,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 111,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 211,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 311,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Túnel 12",
+      "tags": {
+        "temp_ambiente": {
+          "db": 112,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 112,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 112,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 212,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 312,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Túnel 13",
+      "tags": {
+        "temp_ambiente": {
+          "db": 113,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 113,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 113,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 213,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 313,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Túnel 14",
+      "tags": {
+        "temp_ambiente": {
+          "db": 114,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa1": {
+          "db": 114,
+          "start": 4,
+          "type": "REAL",
+          "bit": 0
+        },
+        "temp_pulpa2": {
+          "db": 114,
+          "start": 8,
+          "type": "REAL",
+          "bit": 0
+        },
+        "setpoint": {
+          "db": 214,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0
+        },
+        "estado": {
+          "db": 314,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0
+        }
+      }
+    }
+  ]
+}
