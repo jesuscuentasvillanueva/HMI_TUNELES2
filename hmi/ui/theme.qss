@@ -1,7 +1,8 @@
 /* Tema oscuro industrial */
 
 QWidget {
-  background-color: #0f1316;
+  /* Fondo transparente por defecto para evitar parches oscuros en hijos */
+  background-color: transparent;
   color: #e0e6ed;
   font-family: "Segoe UI", "Ubuntu", "DejaVu Sans", sans-serif;
   font-size: 14px;
@@ -25,6 +26,9 @@ QFrame#TopBar {
   border: 1px solid #1e2a33;
   border-radius: 10px;
 }
+
+/* Asegurar labels sin fondo para heredar animaciones de padres */
+QLabel { background-color: transparent; }
 
 QLabel#TopStatusLabel[connected="true"] {
   color: #10b981;
@@ -259,9 +263,7 @@ QCheckBox {
   padding: 4px;
 }
 
-QStatusBar {
-  background-color: #0f1316;
-}
+QStatusBar { background-color: #0f1316; }
 
 /* Tag badges for PLC addresses */
 QLabel#TagBadge {
