@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QDoubleSpinBox, QGridLayout, QSizePolicy, QDialog, QFormLayout, QSpinBox, QComboBox, QInputDialog, QMessageBox, QLineEdit, QFrame
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QDoubleSpinBox, QGridLayout, QSizePolicy, QDialog, QFormLayout, QSpinBox, QComboBox, QInputDialog, QMessageBox, QLineEdit, QFrame, QToolButton, QScrollArea
 
 from ..models import TunnelConfig, TunnelData, TagAddress
 from typing import Optional
@@ -16,16 +16,35 @@ class TunnelDetailView(QWidget):
     request_setpoint_p1 = pyqtSignal(int, float)
     request_setpoint_p2 = pyqtSignal(int, float)
     back = pyqtSignal()
+    # Preferencias UI (clave, valor)
+    update_ui_pref = pyqtSignal(str, object)
 
     def __init__(self):
         super().__init__()
         self.config: Optional[TunnelConfig] = None
         # No mostrar direcciones de memoria (badges) en esta pantalla
         self._show_tag_badges: bool = False
+        # Flags para no sobreescribir valores mientras el usuario edita
+        self._in_update = False
+        self._sp_dirty = False
+        self._sp1_dirty = False
+        self._sp2_dirty = False
+        self._cal_amb_dirty = False
+        self._cal_p1_dirty = False
+        self._cal_p2_dirty = False
+        self._step = 0.1
         self._build_ui()
 
     def _build_ui(self):
-        layout = QVBoxLayout(self)
+        # Root layout con scroll para pantallas pequeñas
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.NoFrame)
+        page = QWidget()
+        layout = QVBoxLayout(page)
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(12)
 
@@ -81,94 +100,146 @@ class TunnelDetailView(QWidget):
         controls = QHBoxLayout()
         self.btn_on = QPushButton("Encender")
         self.btn_on.setObjectName("Primary")
-        self.btn_on.setProperty("size", "xl")
-        self.btn_on.setMinimumHeight(56)
+        self.btn_on.setProperty("size", "lg")
+        self.btn_on.setMinimumHeight(48)
         self.btn_on.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         self.btn_off = QPushButton("Apagar")
         self.btn_off.setObjectName("Danger")
-        self.btn_off.setProperty("size", "xl")
-        self.btn_off.setMinimumHeight(56)
+        self.btn_off.setProperty("size", "lg")
+        self.btn_off.setMinimumHeight(48)
         self.btn_off.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         controls.addWidget(self.btn_on)
         controls.addWidget(self.btn_off)
 
-        sp_layout = QHBoxLayout()
-        sp_layout.setSpacing(12)
-        self.btn_dec_sp = QPushButton("-0.1")
-        self.btn_dec_sp.setProperty("size", "xl")
-        self.btn_dec_sp.setMinimumHeight(48)
-        self.btn_dec_sp.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-
-        self.sp_setpoint = QDoubleSpinBox()
-        self.sp_setpoint.setDecimals(1)
-        self.sp_setpoint.setRange(-40.0, 60.0)
-        self.sp_setpoint.setSingleStep(0.1)
-        self.sp_setpoint.setProperty("size", "xl")
-        self.sp_setpoint.setMinimumHeight(48)
-        self.sp_setpoint.setMinimumWidth(180)
-
-        self.btn_inc_sp = QPushButton("+0.1")
-        self.btn_inc_sp.setProperty("size", "xl")
-        self.btn_inc_sp.setMinimumHeight(48)
-        self.btn_inc_sp.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-
-        self.btn_apply_sp = QPushButton("Aplicar Setpoint")
-        self.btn_apply_sp.setProperty("size", "xl")
-        self.btn_apply_sp.setMinimumHeight(48)
-        self.btn_apply_sp.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-
-        sp_layout.addWidget(self.btn_dec_sp)
-        sp_layout.addWidget(self.sp_setpoint)
-        sp_layout.addWidget(self.btn_inc_sp)
-        sp_layout.addWidget(self.btn_apply_sp)
+        # Barra de paso alineada a la derecha
+        step_bar = QHBoxLayout()
+        step_bar.addStretch(1)
+        lbl_step = QLabel("Paso"); lbl_step.setProperty("class", "metricLabel")
+        self.cb_step = QComboBox(); self.cb_step.addItems(["0.1", "0.5", "1.0"]); self.cb_step.setCurrentText("0.1"); self.cb_step.setMinimumHeight(48); self.cb_step.setProperty("size", "lg")
+        self.cb_step.currentTextChanged.connect(self._on_step_changed)
+        step_bar.addWidget(lbl_step)
+        step_bar.addWidget(self.cb_step)
 
         layout.addLayout(controls)
-        layout.addLayout(sp_layout)
+        layout.addLayout(step_bar)
 
-        # Setpoints independientes Pulpa 1 y Pulpa 2 (dos filas ocultables)
+        # Setpoints (General + Avanzados)
         self.sp_pulp_frame = QWidget()
         sp_pulp = QGridLayout(self.sp_pulp_frame)
         sp_pulp.setHorizontalSpacing(8)
         sp_pulp.setVerticalSpacing(6)
+        # Columna 0 para etiquetas (angosta), 1-3 para contenido (elásticas)
+        sp_pulp.setColumnStretch(0, 0)
+        sp_pulp.setColumnStretch(1, 1)
+        sp_pulp.setColumnStretch(2, 1)
+        sp_pulp.setColumnStretch(3, 1)
 
+        # Fila SP General
+        self.lbl_sp_gen = QLabel("SP General")
+        sp_pulp.addWidget(self.lbl_sp_gen, 0, 0)
+        rowg = QWidget()
+        row_g = QHBoxLayout(rowg)
+        row_g.setContentsMargins(0, 0, 0, 0)
+        row_g.setSpacing(8)
+        self.btn_dec_sp = QPushButton("-0.1"); self.btn_dec_sp.setMinimumHeight(48); self.btn_dec_sp.setProperty("size", "lg")
+        self.sp_setpoint = QDoubleSpinBox(); self.sp_setpoint.setDecimals(1); self.sp_setpoint.setRange(-40.0, 60.0); self.sp_setpoint.setSingleStep(0.1); self.sp_setpoint.setMinimumHeight(48); self.sp_setpoint.setProperty("size", "lg"); self.sp_setpoint.setMinimumWidth(180); self.sp_setpoint.setSuffix(" °C"); self.sp_setpoint.valueChanged.connect(self._on_sp_user_change)
+        self.btn_inc_sp = QPushButton("+0.1"); self.btn_inc_sp.setMinimumHeight(48); self.btn_inc_sp.setProperty("size", "lg")
+        self.btn_apply_sp = QPushButton("Aplicar Setpoint"); self.btn_apply_sp.setMinimumHeight(48); self.btn_apply_sp.setProperty("size", "lg"); self.btn_apply_sp.setEnabled(False)
+        row_g.addWidget(self.btn_dec_sp)
+        row_g.addWidget(self.sp_setpoint)
+        row_g.addWidget(self.btn_inc_sp)
+        row_g.addWidget(self.btn_apply_sp)
+        sp_pulp.addWidget(rowg, 0, 1, 1, 3)
+
+        layout.addWidget(self.sp_pulp_frame)
+
+        # Contenido avanzado: SP Pulpa 1/2 dentro de sección colapsable
+        sp_adv = QWidget()
+        adv = QGridLayout(sp_adv)
+        adv.setHorizontalSpacing(8)
+        adv.setVerticalSpacing(6)
+        adv.setColumnStretch(0, 0)
+        adv.setColumnStretch(1, 1)
+        adv.setColumnStretch(2, 1)
+        adv.setColumnStretch(3, 1)
         self.lbl_sp_p1 = QLabel("SP Pulpa 1")
         self.lbl_sp_p2 = QLabel("SP Pulpa 2")
-        sp_pulp.addWidget(self.lbl_sp_p1, 0, 0)
-        sp_pulp.addWidget(self.lbl_sp_p2, 1, 0)
-
+        adv.addWidget(self.lbl_sp_p1, 0, 0)
+        adv.addWidget(self.lbl_sp_p2, 1, 0)
         # Fila P1
         self.row_p1 = QWidget()
         row1 = QHBoxLayout(self.row_p1)
         row1.setContentsMargins(0, 0, 0, 0)
         row1.setSpacing(8)
-        self.btn_dec_sp_p1 = QPushButton("-0.1"); self.btn_dec_sp_p1.setMinimumHeight(44); self.btn_dec_sp_p1.setProperty("size", "lg")
-        self.sp_setpoint_p1 = QDoubleSpinBox(); self.sp_setpoint_p1.setDecimals(1); self.sp_setpoint_p1.setRange(-40.0, 60.0); self.sp_setpoint_p1.setSingleStep(0.1); self.sp_setpoint_p1.setMinimumHeight(44); self.sp_setpoint_p1.setProperty("size", "lg")
-        self.btn_inc_sp_p1 = QPushButton("+0.1"); self.btn_inc_sp_p1.setMinimumHeight(44); self.btn_inc_sp_p1.setProperty("size", "lg")
-        self.btn_apply_sp_p1 = QPushButton("Aplicar SP P1"); self.btn_apply_sp_p1.setMinimumHeight(44); self.btn_apply_sp_p1.setProperty("size", "lg")
+        self.btn_dec_sp_p1 = QPushButton("-0.1"); self.btn_dec_sp_p1.setMinimumHeight(48); self.btn_dec_sp_p1.setProperty("size", "lg")
+        self.sp_setpoint_p1 = QDoubleSpinBox(); self.sp_setpoint_p1.setDecimals(1); self.sp_setpoint_p1.setRange(-40.0, 60.0); self.sp_setpoint_p1.setSingleStep(0.1); self.sp_setpoint_p1.setMinimumHeight(48); self.sp_setpoint_p1.setProperty("size", "lg"); self.sp_setpoint_p1.setSuffix(" °C")
+        self.sp_setpoint_p1.valueChanged.connect(self._on_sp1_user_change)
+        self.btn_inc_sp_p1 = QPushButton("+0.1"); self.btn_inc_sp_p1.setMinimumHeight(48); self.btn_inc_sp_p1.setProperty("size", "lg")
+        self.btn_apply_sp_p1 = QPushButton("Aplicar SP P1"); self.btn_apply_sp_p1.setMinimumHeight(48); self.btn_apply_sp_p1.setProperty("size", "lg"); self.btn_apply_sp_p1.setEnabled(False)
         row1.addWidget(self.btn_dec_sp_p1)
         row1.addWidget(self.sp_setpoint_p1)
         row1.addWidget(self.btn_inc_sp_p1)
         row1.addWidget(self.btn_apply_sp_p1)
-        sp_pulp.addWidget(self.row_p1, 0, 1, 1, 3)
-
+        adv.addWidget(self.row_p1, 0, 1, 1, 3)
         # Fila P2
         self.row_p2 = QWidget()
         row2 = QHBoxLayout(self.row_p2)
         row2.setContentsMargins(0, 0, 0, 0)
         row2.setSpacing(8)
-        self.btn_dec_sp_p2 = QPushButton("-0.1"); self.btn_dec_sp_p2.setMinimumHeight(44); self.btn_dec_sp_p2.setProperty("size", "lg")
-        self.sp_setpoint_p2 = QDoubleSpinBox(); self.sp_setpoint_p2.setDecimals(1); self.sp_setpoint_p2.setRange(-40.0, 60.0); self.sp_setpoint_p2.setSingleStep(0.1); self.sp_setpoint_p2.setMinimumHeight(44); self.sp_setpoint_p2.setProperty("size", "lg")
-        self.btn_inc_sp_p2 = QPushButton("+0.1"); self.btn_inc_sp_p2.setMinimumHeight(44); self.btn_inc_sp_p2.setProperty("size", "lg")
-        self.btn_apply_sp_p2 = QPushButton("Aplicar SP P2"); self.btn_apply_sp_p2.setMinimumHeight(44); self.btn_apply_sp_p2.setProperty("size", "lg")
+        self.btn_dec_sp_p2 = QPushButton("-0.1"); self.btn_dec_sp_p2.setMinimumHeight(48); self.btn_dec_sp_p2.setProperty("size", "lg")
+        self.sp_setpoint_p2 = QDoubleSpinBox(); self.sp_setpoint_p2.setDecimals(1); self.sp_setpoint_p2.setRange(-40.0, 60.0); self.sp_setpoint_p2.setSingleStep(0.1); self.sp_setpoint_p2.setMinimumHeight(48); self.sp_setpoint_p2.setProperty("size", "lg"); self.sp_setpoint_p2.setSuffix(" °C")
+        self.sp_setpoint_p2.valueChanged.connect(self._on_sp2_user_change)
+        self.btn_inc_sp_p2 = QPushButton("+0.1"); self.btn_inc_sp_p2.setMinimumHeight(48); self.btn_inc_sp_p2.setProperty("size", "lg")
+        self.btn_apply_sp_p2 = QPushButton("Aplicar SP P2"); self.btn_apply_sp_p2.setMinimumHeight(48); self.btn_apply_sp_p2.setProperty("size", "lg"); self.btn_apply_sp_p2.setEnabled(False)
         row2.addWidget(self.btn_dec_sp_p2)
         row2.addWidget(self.sp_setpoint_p2)
         row2.addWidget(self.btn_inc_sp_p2)
         row2.addWidget(self.btn_apply_sp_p2)
-        sp_pulp.addWidget(self.row_p2, 1, 1, 1, 3)
+        adv.addWidget(self.row_p2, 1, 1, 1, 3)
 
-        layout.addWidget(self.sp_pulp_frame)
+        # Sección colapsable por defecto
+        class CollapsibleSection(QWidget):
+            def __init__(self, title: str, content: QWidget, collapsed: bool = True, right_widget: QWidget = None, on_toggle=None):
+                super().__init__()
+                outer = QVBoxLayout(self)
+                outer.setContentsMargins(0, 0, 0, 0)
+                outer.setSpacing(6)
+                header = QHBoxLayout()
+                self.btn = QToolButton()
+                self.btn.setText(title)
+                self.btn.setCheckable(True)
+                self.btn.setChecked(not collapsed)
+                self.btn.setProperty("size", "lg")
+                self.btn.setMinimumHeight(40)
+                self.btn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+                self.btn.setArrowType(QtCore.Qt.DownArrow if not collapsed else QtCore.Qt.RightArrow)
+                header.addWidget(self.btn)
+                # Resumen a la derecha del título
+                self.summary_lbl = QLabel("")
+                self.summary_lbl.setProperty("class", "metricLabel")
+                header.addSpacing(8)
+                header.addWidget(self.summary_lbl)
+                header.addStretch(1)
+                if right_widget is not None:
+                    header.addWidget(right_widget)
+                outer.addLayout(header)
+                outer.addWidget(content)
+                content.setVisible(not collapsed)
+                self.btn.toggled.connect(lambda ch: self._toggle(content, ch, on_toggle))
+
+            def _toggle(self, content: QWidget, checked: bool, on_toggle):
+                content.setVisible(checked)
+                self.btn.setArrowType(QtCore.Qt.DownArrow if checked else QtCore.Qt.RightArrow)
+                if callable(on_toggle):
+                    on_toggle(checked)
+
+            def set_collapsed(self, collapsed: bool):
+                self.btn.setChecked(not collapsed)
+
+        self.sec_sp_adv = CollapsibleSection("Setpoints avanzados", sp_adv, collapsed=True, on_toggle=lambda ch: self._on_section_toggle('sec_sp_adv_open', ch))
+        layout.addWidget(self.sec_sp_adv)
 
         # Editor de Tags se integra en el encabezado de calibración
 
@@ -178,34 +249,64 @@ class TunnelDetailView(QWidget):
         calib.setContentsMargins(0, 0, 0, 0)
         calib.setHorizontalSpacing(12)
         calib.setVerticalSpacing(6)
-        title_cal = QLabel("Calibración de Sensores (offset, °C)")
-        title_cal.setProperty("class", "sectionTitle")
-        calib.addWidget(title_cal, 0, 0, 1, 3)
-        # Botón pequeño para editar tags integrado aquí
+        calib.setColumnStretch(0, 1)
+        calib.setColumnStretch(1, 1)
+        calib.setColumnStretch(2, 1)
+        calib.setColumnStretch(3, 0)
+        # Botón para editar tags (se moverá al header de la sección colapsable)
         self.btn_edit_tags = QPushButton("Editar Tags PLC")
         self.btn_edit_tags.setProperty("size", "lg")
-        self.btn_edit_tags.setMinimumHeight(40)
-        calib.addWidget(self.btn_edit_tags, 0, 3, 1, 1)
+        self.btn_edit_tags.setMinimumHeight(48)
 
-        # Fila de labels
-        calib.addWidget(QLabel("Ambiente"), 1, 0)
-        calib.addWidget(QLabel("Pulpa 1"), 1, 1)
-        calib.addWidget(QLabel("Pulpa 2"), 1, 2)
-        # Fila de spinboxes
-        self.sp_off_amb = QDoubleSpinBox(); self.sp_off_amb.setDecimals(1); self.sp_off_amb.setRange(-10.0, 10.0); self.sp_off_amb.setSingleStep(0.1); self.sp_off_amb.setMinimumHeight(44); self.sp_off_amb.setProperty("size", "lg")
-        calib.addWidget(self.sp_off_amb, 2, 0)
-        self.sp_off_p1 = QDoubleSpinBox(); self.sp_off_p1.setDecimals(1); self.sp_off_p1.setRange(-10.0, 10.0); self.sp_off_p1.setSingleStep(0.1); self.sp_off_p1.setMinimumHeight(44); self.sp_off_p1.setProperty("size", "lg")
-        calib.addWidget(self.sp_off_p1, 2, 1)
-        self.sp_off_p2 = QDoubleSpinBox(); self.sp_off_p2.setDecimals(1); self.sp_off_p2.setRange(-10.0, 10.0); self.sp_off_p2.setSingleStep(0.1); self.sp_off_p2.setMinimumHeight(44); self.sp_off_p2.setProperty("size", "lg")
-        calib.addWidget(self.sp_off_p2, 2, 2)
+        # Fila de labels (ahora empieza en 0 porque el título está en el header colapsable)
+        calib.addWidget(QLabel("Ambiente"), 0, 0)
+        calib.addWidget(QLabel("Pulpa 1"), 0, 1)
+        calib.addWidget(QLabel("Pulpa 2"), 0, 2)
+        # Fila de controles de calibración con botones +/- grandes
+        # Ambiente
+        self.sp_off_amb = QDoubleSpinBox(); self.sp_off_amb.setDecimals(1); self.sp_off_amb.setRange(-10.0, 10.0); self.sp_off_amb.setSingleStep(0.1); self.sp_off_amb.setMinimumHeight(48); self.sp_off_amb.setProperty("size", "lg"); self.sp_off_amb.setSuffix(" °C")
+        self.sp_off_amb.valueChanged.connect(lambda _: self._set_cal_dirty('amb'))
+        self.btn_dec_cal_amb = QPushButton("-0.1"); self.btn_dec_cal_amb.setProperty("size", "lg"); self.btn_dec_cal_amb.setMinimumHeight(48)
+        self.btn_inc_cal_amb = QPushButton("+0.1"); self.btn_inc_cal_amb.setProperty("size", "lg"); self.btn_inc_cal_amb.setMinimumHeight(48)
+        self.btn_dec_cal_amb.clicked.connect(self._dec_cal_amb)
+        self.btn_inc_cal_amb.clicked.connect(self._inc_cal_amb)
+        row_amb = QWidget(); hb_amb = QHBoxLayout(row_amb); hb_amb.setContentsMargins(0,0,0,0); hb_amb.setSpacing(8)
+        hb_amb.addWidget(self.btn_dec_cal_amb); hb_amb.addWidget(self.sp_off_amb); hb_amb.addWidget(self.btn_inc_cal_amb)
+        calib.addWidget(row_amb, 1, 0)
 
-        # Botón aplicar a la derecha para ahorrar altura
+        # Pulpa 1
+        self.sp_off_p1 = QDoubleSpinBox(); self.sp_off_p1.setDecimals(1); self.sp_off_p1.setRange(-10.0, 10.0); self.sp_off_p1.setSingleStep(0.1); self.sp_off_p1.setMinimumHeight(48); self.sp_off_p1.setProperty("size", "lg"); self.sp_off_p1.setSuffix(" °C")
+        self.sp_off_p1.valueChanged.connect(lambda _: self._set_cal_dirty('p1'))
+        self.btn_dec_cal_p1 = QPushButton("-0.1"); self.btn_dec_cal_p1.setProperty("size", "lg"); self.btn_dec_cal_p1.setMinimumHeight(48)
+        self.btn_inc_cal_p1 = QPushButton("+0.1"); self.btn_inc_cal_p1.setProperty("size", "lg"); self.btn_inc_cal_p1.setMinimumHeight(48)
+        self.btn_dec_cal_p1.clicked.connect(self._dec_cal_p1)
+        self.btn_inc_cal_p1.clicked.connect(self._inc_cal_p1)
+        row_p1 = QWidget(); hb_p1 = QHBoxLayout(row_p1); hb_p1.setContentsMargins(0,0,0,0); hb_p1.setSpacing(8)
+        hb_p1.addWidget(self.btn_dec_cal_p1); hb_p1.addWidget(self.sp_off_p1); hb_p1.addWidget(self.btn_inc_cal_p1)
+        calib.addWidget(row_p1, 1, 1)
+
+        # Pulpa 2
+        self.sp_off_p2 = QDoubleSpinBox(); self.sp_off_p2.setDecimals(1); self.sp_off_p2.setRange(-10.0, 10.0); self.sp_off_p2.setSingleStep(0.1); self.sp_off_p2.setMinimumHeight(48); self.sp_off_p2.setProperty("size", "lg"); self.sp_off_p2.setSuffix(" °C")
+        self.sp_off_p2.valueChanged.connect(lambda _: self._set_cal_dirty('p2'))
+        self.btn_dec_cal_p2 = QPushButton("-0.1"); self.btn_dec_cal_p2.setProperty("size", "lg"); self.btn_dec_cal_p2.setMinimumHeight(48)
+        self.btn_inc_cal_p2 = QPushButton("+0.1"); self.btn_inc_cal_p2.setProperty("size", "lg"); self.btn_inc_cal_p2.setMinimumHeight(48)
+        self.btn_dec_cal_p2.clicked.connect(self._dec_cal_p2)
+        self.btn_inc_cal_p2.clicked.connect(self._inc_cal_p2)
+        row_p2 = QWidget(); hb_p2 = QHBoxLayout(row_p2); hb_p2.setContentsMargins(0,0,0,0); hb_p2.setSpacing(8)
+        hb_p2.addWidget(self.btn_dec_cal_p2); hb_p2.addWidget(self.sp_off_p2); hb_p2.addWidget(self.btn_inc_cal_p2)
+        calib.addWidget(row_p2, 1, 2)
+
+        # Botón aplicar grande y en una fila completa para touch
         self.btn_apply_cal = QPushButton("Aplicar Calibración")
         self.btn_apply_cal.setProperty("size", "lg")
-        self.btn_apply_cal.setMinimumHeight(44)
-        calib.addWidget(self.btn_apply_cal, 2, 3)
+        self.btn_apply_cal.setMinimumHeight(48)
+        self.btn_apply_cal.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.btn_apply_cal.setEnabled(False)
+        calib.addWidget(self.btn_apply_cal, 2, 0, 1, 4)
 
-        layout.addWidget(self.calib_frame)
+        # Envolver calibración en sección colapsable por defecto, con botón a la derecha
+        self.sec_cal = CollapsibleSection("Calibración de Sensores (offset, °C)", self.calib_frame, collapsed=True, right_widget=self.btn_edit_tags, on_toggle=lambda ch: self._on_section_toggle('sec_cal_open', ch))
+        layout.addWidget(self.sec_cal)
 
         self.btn_back = QPushButton("Volver")
         self.btn_back.setProperty("size", "xl")
@@ -223,11 +324,30 @@ class TunnelDetailView(QWidget):
         self.btn_apply_cal.clicked.connect(self._on_apply_cal)
         # Setpoints pulpa
         self.btn_apply_sp_p1.clicked.connect(self._on_apply_sp_p1)
-        self.btn_inc_sp_p1.clicked.connect(lambda: self.sp_setpoint_p1.setValue(self.sp_setpoint_p1.value() + 0.1))
-        self.btn_dec_sp_p1.clicked.connect(lambda: self.sp_setpoint_p1.setValue(self.sp_setpoint_p1.value() - 0.1))
+        self.btn_inc_sp_p1.clicked.connect(self._inc_sp1)
+        self.btn_dec_sp_p1.clicked.connect(self._dec_sp1)
         self.btn_apply_sp_p2.clicked.connect(self._on_apply_sp_p2)
-        self.btn_inc_sp_p2.clicked.connect(lambda: self.sp_setpoint_p2.setValue(self.sp_setpoint_p2.value() + 0.1))
-        self.btn_dec_sp_p2.clicked.connect(lambda: self.sp_setpoint_p2.setValue(self.sp_setpoint_p2.value() - 0.1))
+        self.btn_inc_sp_p2.clicked.connect(self._inc_sp2)
+        self.btn_dec_sp_p2.clicked.connect(self._dec_sp2)
+
+        # Montar el contenido dentro del scroll
+        self.scroll.setWidget(page)
+        root_layout.addWidget(self.scroll)
+
+    def apply_ui_prefs(self, ui: dict):
+        # Restaurar estado colapsado
+        try:
+            open_adv = bool(ui.get('sec_sp_adv_open', False))
+            self.sec_sp_adv.set_collapsed(not open_adv)
+        except Exception:
+            pass
+        try:
+            open_cal = bool(ui.get('sec_cal_open', False))
+            self.sec_cal.set_collapsed(not open_cal)
+        except Exception:
+            pass
+        # Refrescar resúmenes
+        self._update_section_summaries()
 
     def set_tunnel(self, config: TunnelConfig):
         self.config = config
@@ -239,6 +359,18 @@ class TunnelDetailView(QWidget):
         self.sp_off_amb.setValue(float(cal.get("temp_ambiente", 0.0)))
         self.sp_off_p1.setValue(float(cal.get("temp_pulpa1", 0.0)))
         self.sp_off_p2.setValue(float(cal.get("temp_pulpa2", 0.0)))
+        self._cal_amb_dirty = self._cal_p1_dirty = self._cal_p2_dirty = False
+        # Resetear flags de edición al cambiar de túnel
+        self._sp_dirty = False
+        self._sp1_dirty = False
+        self._sp2_dirty = False
+        # Quitar resaltado dirty
+        self._set_dirty_prop(self.sp_setpoint, False)
+        self._set_dirty_prop(self.sp_setpoint_p1, False)
+        self._set_dirty_prop(self.sp_setpoint_p2, False)
+        self._set_dirty_prop(self.sp_off_amb, False)
+        self._set_dirty_prop(self.sp_off_p1, False)
+        self._set_dirty_prop(self.sp_off_p2, False)
         # Mostrar/ocultar SP Pulpa según tags existentes
         try:
             tags = config.tags or {}
@@ -248,23 +380,41 @@ class TunnelDetailView(QWidget):
             self.row_p1.setVisible(has_p1)
             self.lbl_sp_p2.setVisible(has_p2)
             self.row_p2.setVisible(has_p2)
-            self.sp_pulp_frame.setVisible(has_p1 or has_p2)
+            # Mantener siempre visible el SP General; ocultar por completo la sección avanzada si no hay P1/P2
+            self.sec_sp_adv.setVisible(has_p1 or has_p2)
         except Exception:
             pass
+        # Actualizar resúmenes de secciones
+        self._update_section_summaries()
 
     def update_data(self, data: TunnelData):
-        # Actualizar valores en el layout compacto 2x2
-        self.val_amb.setText(f"{data.temp_ambiente:.1f} °C")
-        self.val_p1.setText(f"{data.temp_pulpa1:.1f} °C")
-        self.val_p2.setText(f"{data.temp_pulpa2:.1f} °C")
-        self.val_sp.setText(f"{data.setpoint:.1f} °C")
-        self.sp_setpoint.setValue(data.setpoint)
-        # Setpoints pulpa
+        self._in_update = True
         try:
-            self.sp_setpoint_p1.setValue(float(getattr(data, 'setpoint_pulpa1', 0.0)))
-            self.sp_setpoint_p2.setValue(float(getattr(data, 'setpoint_pulpa2', 0.0)))
-        except Exception:
-            pass
+            # Actualizar valores mostrados
+            self.val_amb.setText(f"{data.temp_ambiente:.1f} °C")
+            self.val_p1.setText(f"{data.temp_pulpa1:.1f} °C")
+            self.val_p2.setText(f"{data.temp_pulpa2:.1f} °C")
+            self.val_sp.setText(f"{data.setpoint:.1f} °C")
+
+            # Solo sobreescribir spinboxes si el usuario no está editando (no foco) y no hay cambios sin aplicar
+            if not self.sp_setpoint.hasFocus() and not self._sp_dirty:
+                self.sp_setpoint.setValue(float(data.setpoint))
+            try:
+                sp1 = float(getattr(data, 'setpoint_pulpa1', 0.0))
+            except Exception:
+                sp1 = 0.0
+            if not self.sp_setpoint_p1.hasFocus() and not self._sp1_dirty:
+                self.sp_setpoint_p1.setValue(sp1)
+            try:
+                sp2 = float(getattr(data, 'setpoint_pulpa2', 0.0))
+            except Exception:
+                sp2 = 0.0
+            if not self.sp_setpoint_p2.hasFocus() and not self._sp2_dirty:
+                self.sp_setpoint_p2.setValue(sp2)
+        finally:
+            self._in_update = False
+        # Actualizar resúmenes (valores visibles pudieron cambiar)
+        self._update_section_summaries()
         # Estado visual destacado
         if data.estado:
             self.state_chip.setText("Encendido")
@@ -284,6 +434,35 @@ class TunnelDetailView(QWidget):
             except Exception:
                 pass
 
+    # Deshabilitar acciones que requieren PLC cuando se pierde conexión
+    def set_online(self, online: bool):
+        try:
+            # Encender/Apagar y aplicar a PLC
+            for w in (
+                self.btn_on, self.btn_off,
+                self.btn_apply_sp, self.btn_apply_sp_p1, self.btn_apply_sp_p2,
+                self.btn_apply_cal,
+            ):
+                w.setEnabled(online)
+        except Exception:
+            pass
+        if not online:
+            # Mostrar guiones en métricas
+            try:
+                self.val_amb.setText("--.- °C")
+                self.val_p1.setText("--.- °C")
+                self.val_p2.setText("--.- °C")
+                self.val_sp.setText("--.- °C")
+                self.state_chip.setText("Apagado")
+                self.state_chip.setProperty("state", "off")
+                self.status_dot.setProperty("state", "off")
+                self.header_frame.setProperty("on", "false")
+                for w in (self.state_chip, self.status_dot, self.header_frame):
+                    w.style().unpolish(w)
+                    w.style().polish(w)
+            except Exception:
+                pass
+
     def _on_on(self):
         if self.config:
             self.request_estado.emit(self.config.id, True)
@@ -295,22 +474,165 @@ class TunnelDetailView(QWidget):
     def _on_apply_sp(self):
         if self.config:
             self.request_setpoint.emit(self.config.id, float(self.sp_setpoint.value()))
+            # Ya enviado: permitir que el sondeo vuelva a sincronizar
+            self._sp_dirty = False
+            self.btn_apply_sp.setEnabled(False)
 
     def _on_apply_sp_p1(self):
         if self.config:
             self.request_setpoint_p1.emit(self.config.id, float(self.sp_setpoint_p1.value()))
+            self._sp1_dirty = False
+            self.btn_apply_sp_p1.setEnabled(False)
 
     def _on_apply_sp_p2(self):
         if self.config:
             self.request_setpoint_p2.emit(self.config.id, float(self.sp_setpoint_p2.value()))
+            self._sp2_dirty = False
+            self.btn_apply_sp_p2.setEnabled(False)
 
     def _on_inc(self):
-        self.sp_setpoint.setValue(self.sp_setpoint.value() + 0.1)
+        self.sp_setpoint.setValue(self.sp_setpoint.value() + self._step)
+        self._sp_dirty = True
+        self.btn_apply_sp.setEnabled(True)
 
     def _on_dec(self):
-        self.sp_setpoint.setValue(self.sp_setpoint.value() - 0.1)
+        self.sp_setpoint.setValue(self.sp_setpoint.value() - self._step)
+        self._sp_dirty = True
+        self.btn_apply_sp.setEnabled(True)
+
+    # Marcar edición por el usuario (ignorar cambios que vienen del sondeo)
+    def _on_sp_user_change(self, _):
+        if not self._in_update:
+            self._sp_dirty = True
+            self.btn_apply_sp.setEnabled(True)
+            self._set_dirty_prop(self.sp_setpoint, True)
+
+    def _on_sp1_user_change(self, _):
+        if not self._in_update:
+            self._sp1_dirty = True
+            self.btn_apply_sp_p1.setEnabled(True)
+            self._set_dirty_prop(self.sp_setpoint_p1, True)
+        self._update_section_summaries()
+
+    def _on_sp2_user_change(self, _):
+        if not self._in_update:
+            self._sp2_dirty = True
+            self.btn_apply_sp_p2.setEnabled(True)
+            self._set_dirty_prop(self.sp_setpoint_p2, True)
+        self._update_section_summaries()
+
+    def _on_step_changed(self, text: str):
+        try:
+            step = float(text.replace(",", "."))
+        except Exception:
+            step = 0.1
+        self._step = step
+        # Aplicar a todos los spinboxes
+        for sb in (self.sp_setpoint, self.sp_setpoint_p1, self.sp_setpoint_p2, self.sp_off_amb, self.sp_off_p1, self.sp_off_p2):
+            try:
+                sb.setSingleStep(step)
+            except Exception:
+                pass
+        # Actualizar etiquetas de botones +/-
+        for btn in (
+            self.btn_dec_sp, self.btn_inc_sp,
+            self.btn_dec_sp_p1, self.btn_inc_sp_p1,
+            self.btn_dec_sp_p2, self.btn_inc_sp_p2,
+            self.btn_dec_cal_amb, self.btn_inc_cal_amb,
+            self.btn_dec_cal_p1, self.btn_inc_cal_p1,
+            self.btn_dec_cal_p2, self.btn_inc_cal_p2,
+        ):
+            try:
+                if "+" in btn.text():
+                    btn.setText(f"+{step}")
+                else:
+                    btn.setText(f"-{step}")
+            except Exception:
+                pass
+
+    # Handlers SP P1/P2 con paso dinámico
+    def _inc_sp1(self):
+        self.sp_setpoint_p1.setValue(self.sp_setpoint_p1.value() + self._step)
+    def _dec_sp1(self):
+        self.sp_setpoint_p1.setValue(self.sp_setpoint_p1.value() - self._step)
+    def _inc_sp2(self):
+        self.sp_setpoint_p2.setValue(self.sp_setpoint_p2.value() + self._step)
+    def _dec_sp2(self):
+        self.sp_setpoint_p2.setValue(self.sp_setpoint_p2.value() - self._step)
+
+    # Handlers Calibración con paso dinámico y habilitado del botón aplicar
+    def _inc_cal_amb(self):
+        self.sp_off_amb.setValue(self.sp_off_amb.value() + self._step)
+        self._set_cal_dirty('amb')
+        self._update_apply_cal_enabled()
+        self._update_section_summaries()
+    def _dec_cal_amb(self):
+        self.sp_off_amb.setValue(self.sp_off_amb.value() - self._step)
+        self._set_cal_dirty('amb')
+        self._update_apply_cal_enabled()
+        self._update_section_summaries()
+    def _inc_cal_p1(self):
+        self.sp_off_p1.setValue(self.sp_off_p1.value() + self._step)
+        self._set_cal_dirty('p1')
+        self._update_apply_cal_enabled()
+        self._update_section_summaries()
+    def _dec_cal_p1(self):
+        self.sp_off_p1.setValue(self.sp_off_p1.value() - self._step)
+        self._set_cal_dirty('p1')
+        self._update_apply_cal_enabled()
+        self._update_section_summaries()
+    def _inc_cal_p2(self):
+        self.sp_off_p2.setValue(self.sp_off_p2.value() + self._step)
+        self._set_cal_dirty('p2')
+        self._update_apply_cal_enabled()
+        self._update_section_summaries()
+    def _dec_cal_p2(self):
+        self.sp_off_p2.setValue(self.sp_off_p2.value() - self._step)
+        self._set_cal_dirty('p2')
+        self._update_apply_cal_enabled()
+        self._update_section_summaries()
 
     # --- Tag badges helpers ---
+    def _set_dirty_prop(self, w: QWidget, dirty: bool):
+        try:
+            w.setProperty("dirty", "true" if dirty else "false")
+            w.style().unpolish(w)
+            w.style().polish(w)
+        except Exception:
+            pass
+
+    def _update_apply_cal_enabled(self):
+        any_dirty = bool(self._cal_amb_dirty or self._cal_p1_dirty or self._cal_p2_dirty)
+        try:
+            self.btn_apply_cal.setEnabled(any_dirty)
+        except Exception:
+            pass
+        # Resaltar cada spinbox según dirty
+        self._set_dirty_prop(self.sp_off_amb, self._cal_amb_dirty)
+        self._set_dirty_prop(self.sp_off_p1, self._cal_p1_dirty)
+        self._set_dirty_prop(self.sp_off_p2, self._cal_p2_dirty)
+
+    def _on_section_toggle(self, key: str, open_state: bool):
+        # Persistir preferencia hacia MainWindow
+        try:
+            self.update_ui_pref.emit(key, open_state)
+        except Exception:
+            pass
+
+    def _update_section_summaries(self):
+        # Resumen Setpoints avanzados
+        try:
+            sp1 = self.sp_setpoint_p1.value()
+            sp2 = self.sp_setpoint_p2.value()
+            self.sec_sp_adv.summary_lbl.setText(f"P1: {sp1:.1f} °C • P2: {sp2:.1f} °C")
+        except Exception:
+            pass
+        # Resumen Calibración
+        try:
+            a = self.sp_off_amb.value(); p1 = self.sp_off_p1.value(); p2 = self.sp_off_p2.value()
+            self.sec_cal.summary_lbl.setText(f"Amb: {a:+.1f} • P1: {p1:+.1f} • P2: {p2:+.1f} °C")
+        except Exception:
+            pass
     def _format_tag(self, tag: TagAddress) -> str:
         area = getattr(tag, "area", "DB").upper()
         if tag.type.upper() == "BOOL":
@@ -406,6 +728,15 @@ class TunnelDetailView(QWidget):
         # Actualizar en memoria local para reflejar inmediatamente
         self.config.calibrations = cal
         self.update_tunnel_calibrations.emit(self.config.id, cal)
+        self._cal_amb_dirty = self._cal_p1_dirty = self._cal_p2_dirty = False
+
+    def _set_cal_dirty(self, which: str):
+        if which == 'amb':
+            self._cal_amb_dirty = True
+        elif which == 'p1':
+            self._cal_p1_dirty = True
+        elif which == 'p2':
+            self._cal_p2_dirty = True
 
 
 class TagEditorDialog(QDialog):

@@ -187,6 +187,43 @@ QProgressBar#MetricBar[level="low"]::chunk {
   background-color: #60a5fa;
 }
 
+/* --- Touch-friendly Scrollbars --- */
+QScrollArea { background: transparent; }
+QScrollBar:vertical {
+  background: #0f1316;
+  width: 20px; /* barra gruesa */
+  margin: 8px 6px 8px 0; /* deja espacio del borde derecho */
+  border: 1px solid #1e2a33;
+  border-radius: 10px;
+}
+QScrollBar::handle:vertical {
+  background: #2a3a45;
+  min-height: 48px; /* fácil de agarrar */
+  border: 1px solid #35505e;
+  border-radius: 10px;
+}
+QScrollBar::handle:vertical:hover {
+  background: #35505e;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+  height: 0px; /* sin flechas */
+}
+QScrollBar:horizontal {
+  background: #0f1316;
+  height: 18px;
+  margin: 0 8px 6px 8px;
+  border: 1px solid #1e2a33;
+  border-radius: 10px;
+}
+QScrollBar::handle:horizontal {
+  background: #2a3a45;
+  min-width: 48px;
+  border: 1px solid #35505e;
+  border-radius: 10px;
+}
+QScrollBar::handle:horizontal:hover { background: #35505e; }
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }
+
 QPushButton {
   background-color: #1f2a33;
   color: #e0e6ed;
@@ -201,6 +238,12 @@ QPushButton:hover {
 
 QPushButton:pressed {
   background-color: #192128;
+}
+
+QPushButton:disabled {
+  background-color: #10161b;
+  color: #7d8a95;
+  border-color: #1e2a33;
 }
 
 QPushButton#Primary {
@@ -257,6 +300,12 @@ QLineEdit, QDoubleSpinBox, QSpinBox {
   border: 1px solid #26313a;
   border-radius: 6px;
   padding: 6px 8px;
+}
+
+/* Resaltado cuando hay cambios locales sin aplicar */
+QDoubleSpinBox[dirty="true"], QSpinBox[dirty="true"], QLineEdit[dirty="true"] {
+  border: 1px solid #00e5ff;
+  background-color: #0b1920;
 }
 
 QCheckBox {
@@ -319,5 +368,10 @@ QDoubleSpinBox[size="xl"] {
 }
 QDoubleSpinBox[size="xl"]::up-button,
 QDoubleSpinBox[size="xl"]::down-button {
-  width: 28px;
+  width: 36px;
+}
+QDoubleSpinBox[size="xl"]::up-arrow,
+QDoubleSpinBox[size="xl"]::down-arrow {
+  width: 16px;
+  height: 16px;
 }

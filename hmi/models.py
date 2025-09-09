@@ -48,3 +48,4 @@ class TunnelData:
 class AppConfig:
     plc: PLCConfig
     tunnels: List[TunnelConfig]
+    ui: dict = field(default_factory=dict)

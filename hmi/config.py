@@ -29,7 +29,8 @@ class ConfigManager:
             tags = {k: TagAddress(**v) for k, v in t.get("tags", {}).items()}
             calibrations = t.get("calibrations", {})
             tunnels_list.append(TunnelConfig(id=t["id"], name=t["name"], tags=tags, calibrations=calibrations))
-        return AppConfig(plc=plc, tunnels=tunnels_list)
+        ui = data.get("ui", {})
+        return AppConfig(plc=plc, tunnels=tunnels_list, ui=ui)
 
     def save(self, cfg: AppConfig) -> None:
         data = {
@@ -43,6 +44,7 @@ class ConfigManager:
                 }
                 for t in cfg.tunnels
             ],
+            "ui": cfg.ui,
         }
         self.path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 

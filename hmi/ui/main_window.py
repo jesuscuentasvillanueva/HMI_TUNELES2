@@ -99,8 +99,8 @@ class MainWindow(QMainWindow):
 
         # Settings view con config actual
         self._cfg_manager = ConfigManager()
-        cfg = self._cfg_manager.load_or_create_default()
-        self.view_settings = SettingsView(cfg.plc)
+        self._app_cfg = self._cfg_manager.load_or_create_default()
+        self.view_settings = SettingsView(self._app_cfg.plc)
 
         self.stack.addWidget(self.view_dashboard)  # index 0
         self.stack.addWidget(self.view_detail)     # index 1
@@ -123,6 +123,12 @@ class MainWindow(QMainWindow):
         self.view_detail.update_tunnel_tags.connect(self.update_tunnel_tags)
         self.view_detail.update_tunnel_calibrations.connect(self._on_update_tunnel_calibrations)
         self.view_detail.update_tunnel_calibrations.connect(self.update_tunnel_calibrations)
+        # Preferencias de UI (colapsables, etc.)
+        try:
+            self.view_detail.apply_ui_prefs(self._app_cfg.ui)
+            self.view_detail.update_ui_pref.connect(self._on_update_ui_pref)
+        except Exception:
+            pass
 
         # Aplicación de configuración
         self.view_settings.apply_settings.connect(self._apply_settings_and_back)
@@ -169,10 +175,18 @@ class MainWindow(QMainWindow):
             self.lbl_update.setText(f"Últ. act.: {strftime('%H:%M:%S', localtime())}")
         except Exception:
             pass
+
+    def _on_update_ui_pref(self, key: str, value):
+        # Guardar preferencia en config.json
+        try:
+            self._app_cfg.ui[key] = value
+            self._cfg_manager.save(self._app_cfg)
+        except Exception:
+            pass
         # Si estamos en el detalle y hay datos del túnel actual, refrescar
-        if self._current_tunnel_id and self._current_tunnel_id in data:
+        if self._current_tunnel_id and self._current_tunnel_id in self._last_data:
             try:
-                self.view_detail.update_data(data[self._current_tunnel_id])
+                self.view_detail.update_data(self._last_data[self._current_tunnel_id])
             except Exception:
                 pass
 
@@ -200,6 +214,11 @@ class MainWindow(QMainWindow):
         # re-polish to apply QSS based on property
         self.lbl_status.style().unpolish(self.lbl_status)
         self.lbl_status.style().polish(self.lbl_status)
+        # Propagar a la vista de detalle para habilitar/deshabilitar acciones
+        try:
+            self.view_detail.set_online(connected)
+        except Exception:
+            pass
 
     def on_plc_error(self, message: str):
         # Mostrar texto breve y guardar detalle en tooltip

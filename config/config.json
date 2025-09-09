@@ -41,15 +41,15 @@
           "area": "DB"
         },
         "setpoint_pulpa1": {
-          "db": 1,
-          "start": 0,
+          "db": 6,
+          "start": 220,
           "type": "REAL",
           "bit": 0,
           "area": "DB"
         },
         "setpoint_pulpa2": {
-          "db": 1,
-          "start": 0,
+          "db": 6,
+          "start": 220,
           "type": "REAL",
           "bit": 0,
           "area": "DB"
@@ -58,19 +58,19 @@
           "db": 1,
           "start": 0,
           "type": "BOOL",
-          "bit": 1,
+          "bit": 0,
           "area": "Q"
         },
         "cmd_encender": {
           "db": 1,
-          "start": 4,
+          "start": 2,
           "type": "BOOL",
           "bit": 1,
           "area": "M"
         },
         "cmd_apagar": {
           "db": 1,
-          "start": 4,
+          "start": 2,
           "type": "BOOL",
           "bit": 2,
           "area": "M"
@@ -83,24 +83,24 @@
           "area": "DB"
         },
         "cal_temp_pulpa1": {
-          "db": 1,
-          "start": 0,
+          "db": 6,
+          "start": 220,
           "type": "REAL",
           "bit": 0,
           "area": "DB"
         },
         "cal_temp_pulpa2": {
-          "db": 1,
-          "start": 0,
+          "db": 6,
+          "start": 220,
           "type": "REAL",
           "bit": 0,
           "area": "DB"
         }
       },
       "calibrations": {
-        "temp_ambiente": 0.0,
-        "temp_pulpa1": 0.0,
-        "temp_pulpa2": 0.0
+        "temp_ambiente": -0.7,
+        "temp_pulpa1": 0.2,
+        "temp_pulpa2": 0.3
       }
     },
     {
