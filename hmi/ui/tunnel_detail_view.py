@@ -13,11 +13,15 @@ class TunnelDetailView(QWidget):
     request_estado = pyqtSignal(int, bool)
     update_tunnel_tags = pyqtSignal(int, dict)  # dict[str, TagAddress]
     update_tunnel_calibrations = pyqtSignal(int, dict)  # dict[str, float]
+    request_setpoint_p1 = pyqtSignal(int, float)
+    request_setpoint_p2 = pyqtSignal(int, float)
     back = pyqtSignal()
 
     def __init__(self):
         super().__init__()
         self.config: Optional[TunnelConfig] = None
+        # No mostrar direcciones de memoria (badges) en esta pantalla
+        self._show_tag_badges: bool = False
         self._build_ui()
 
     def _build_ui(self):
@@ -123,11 +127,54 @@ class TunnelDetailView(QWidget):
         layout.addLayout(controls)
         layout.addLayout(sp_layout)
 
+        # Setpoints independientes Pulpa 1 y Pulpa 2 (dos filas ocultables)
+        self.sp_pulp_frame = QWidget()
+        sp_pulp = QGridLayout(self.sp_pulp_frame)
+        sp_pulp.setHorizontalSpacing(8)
+        sp_pulp.setVerticalSpacing(6)
+
+        self.lbl_sp_p1 = QLabel("SP Pulpa 1")
+        self.lbl_sp_p2 = QLabel("SP Pulpa 2")
+        sp_pulp.addWidget(self.lbl_sp_p1, 0, 0)
+        sp_pulp.addWidget(self.lbl_sp_p2, 1, 0)
+
+        # Fila P1
+        self.row_p1 = QWidget()
+        row1 = QHBoxLayout(self.row_p1)
+        row1.setContentsMargins(0, 0, 0, 0)
+        row1.setSpacing(8)
+        self.btn_dec_sp_p1 = QPushButton("-0.1"); self.btn_dec_sp_p1.setMinimumHeight(44); self.btn_dec_sp_p1.setProperty("size", "lg")
+        self.sp_setpoint_p1 = QDoubleSpinBox(); self.sp_setpoint_p1.setDecimals(1); self.sp_setpoint_p1.setRange(-40.0, 60.0); self.sp_setpoint_p1.setSingleStep(0.1); self.sp_setpoint_p1.setMinimumHeight(44); self.sp_setpoint_p1.setProperty("size", "lg")
+        self.btn_inc_sp_p1 = QPushButton("+0.1"); self.btn_inc_sp_p1.setMinimumHeight(44); self.btn_inc_sp_p1.setProperty("size", "lg")
+        self.btn_apply_sp_p1 = QPushButton("Aplicar SP P1"); self.btn_apply_sp_p1.setMinimumHeight(44); self.btn_apply_sp_p1.setProperty("size", "lg")
+        row1.addWidget(self.btn_dec_sp_p1)
+        row1.addWidget(self.sp_setpoint_p1)
+        row1.addWidget(self.btn_inc_sp_p1)
+        row1.addWidget(self.btn_apply_sp_p1)
+        sp_pulp.addWidget(self.row_p1, 0, 1, 1, 3)
+
+        # Fila P2
+        self.row_p2 = QWidget()
+        row2 = QHBoxLayout(self.row_p2)
+        row2.setContentsMargins(0, 0, 0, 0)
+        row2.setSpacing(8)
+        self.btn_dec_sp_p2 = QPushButton("-0.1"); self.btn_dec_sp_p2.setMinimumHeight(44); self.btn_dec_sp_p2.setProperty("size", "lg")
+        self.sp_setpoint_p2 = QDoubleSpinBox(); self.sp_setpoint_p2.setDecimals(1); self.sp_setpoint_p2.setRange(-40.0, 60.0); self.sp_setpoint_p2.setSingleStep(0.1); self.sp_setpoint_p2.setMinimumHeight(44); self.sp_setpoint_p2.setProperty("size", "lg")
+        self.btn_inc_sp_p2 = QPushButton("+0.1"); self.btn_inc_sp_p2.setMinimumHeight(44); self.btn_inc_sp_p2.setProperty("size", "lg")
+        self.btn_apply_sp_p2 = QPushButton("Aplicar SP P2"); self.btn_apply_sp_p2.setMinimumHeight(44); self.btn_apply_sp_p2.setProperty("size", "lg")
+        row2.addWidget(self.btn_dec_sp_p2)
+        row2.addWidget(self.sp_setpoint_p2)
+        row2.addWidget(self.btn_inc_sp_p2)
+        row2.addWidget(self.btn_apply_sp_p2)
+        sp_pulp.addWidget(self.row_p2, 1, 1, 1, 3)
+
+        layout.addWidget(self.sp_pulp_frame)
+
         # Editor de Tags se integra en el encabezado de calibración
 
         # Calibración de Sensores
-        calib_frame = QWidget()
-        calib = QGridLayout(calib_frame)
+        self.calib_frame = QWidget()
+        calib = QGridLayout(self.calib_frame)
         calib.setContentsMargins(0, 0, 0, 0)
         calib.setHorizontalSpacing(12)
         calib.setVerticalSpacing(6)
@@ -158,7 +205,7 @@ class TunnelDetailView(QWidget):
         self.btn_apply_cal.setMinimumHeight(44)
         calib.addWidget(self.btn_apply_cal, 2, 3)
 
-        layout.addWidget(calib_frame)
+        layout.addWidget(self.calib_frame)
 
         self.btn_back = QPushButton("Volver")
         self.btn_back.setProperty("size", "xl")
@@ -174,17 +221,36 @@ class TunnelDetailView(QWidget):
         self.btn_dec_sp.clicked.connect(self._on_dec)
         self.btn_edit_tags.clicked.connect(self._open_tag_editor)
         self.btn_apply_cal.clicked.connect(self._on_apply_cal)
+        # Setpoints pulpa
+        self.btn_apply_sp_p1.clicked.connect(self._on_apply_sp_p1)
+        self.btn_inc_sp_p1.clicked.connect(lambda: self.sp_setpoint_p1.setValue(self.sp_setpoint_p1.value() + 0.1))
+        self.btn_dec_sp_p1.clicked.connect(lambda: self.sp_setpoint_p1.setValue(self.sp_setpoint_p1.value() - 0.1))
+        self.btn_apply_sp_p2.clicked.connect(self._on_apply_sp_p2)
+        self.btn_inc_sp_p2.clicked.connect(lambda: self.sp_setpoint_p2.setValue(self.sp_setpoint_p2.value() + 0.1))
+        self.btn_dec_sp_p2.clicked.connect(lambda: self.sp_setpoint_p2.setValue(self.sp_setpoint_p2.value() - 0.1))
 
     def set_tunnel(self, config: TunnelConfig):
         self.config = config
         self.lbl_title.setText(config.name)
-        # Mostrar badges de tags si existen
+        # No mostrar direcciones de memoria en esta pantalla
         self._update_tag_badges()
         # Precargar calibraciones si existen
         cal = getattr(config, "calibrations", {}) or {}
         self.sp_off_amb.setValue(float(cal.get("temp_ambiente", 0.0)))
         self.sp_off_p1.setValue(float(cal.get("temp_pulpa1", 0.0)))
         self.sp_off_p2.setValue(float(cal.get("temp_pulpa2", 0.0)))
+        # Mostrar/ocultar SP Pulpa según tags existentes
+        try:
+            tags = config.tags or {}
+            has_p1 = "setpoint_pulpa1" in tags
+            has_p2 = "setpoint_pulpa2" in tags
+            self.lbl_sp_p1.setVisible(has_p1)
+            self.row_p1.setVisible(has_p1)
+            self.lbl_sp_p2.setVisible(has_p2)
+            self.row_p2.setVisible(has_p2)
+            self.sp_pulp_frame.setVisible(has_p1 or has_p2)
+        except Exception:
+            pass
 
     def update_data(self, data: TunnelData):
         # Actualizar valores en el layout compacto 2x2
@@ -193,6 +259,12 @@ class TunnelDetailView(QWidget):
         self.val_p2.setText(f"{data.temp_pulpa2:.1f} °C")
         self.val_sp.setText(f"{data.setpoint:.1f} °C")
         self.sp_setpoint.setValue(data.setpoint)
+        # Setpoints pulpa
+        try:
+            self.sp_setpoint_p1.setValue(float(getattr(data, 'setpoint_pulpa1', 0.0)))
+            self.sp_setpoint_p2.setValue(float(getattr(data, 'setpoint_pulpa2', 0.0)))
+        except Exception:
+            pass
         # Estado visual destacado
         if data.estado:
             self.state_chip.setText("Encendido")
@@ -224,6 +296,14 @@ class TunnelDetailView(QWidget):
         if self.config:
             self.request_setpoint.emit(self.config.id, float(self.sp_setpoint.value()))
 
+    def _on_apply_sp_p1(self):
+        if self.config:
+            self.request_setpoint_p1.emit(self.config.id, float(self.sp_setpoint_p1.value()))
+
+    def _on_apply_sp_p2(self):
+        if self.config:
+            self.request_setpoint_p2.emit(self.config.id, float(self.sp_setpoint_p2.value()))
+
     def _on_inc(self):
         self.sp_setpoint.setValue(self.sp_setpoint.value() + 0.1)
 
@@ -243,6 +323,9 @@ class TunnelDetailView(QWidget):
             return f"{area}{tag.start} (REAL)"
 
     def _update_tag_badges(self):
+        if not getattr(self, "_show_tag_badges", False):
+            # Oculto: no crear ni insertar barra de badges
+            return
         if not hasattr(self, "_tag_bar"):
             # Crear barra de badges solo una vez
             self._tag_bar = QHBoxLayout()
@@ -251,11 +334,21 @@ class TunnelDetailView(QWidget):
             self.badge_p1 = QLabel(""); self.badge_p1.setObjectName("TagBadge")
             self.badge_p2 = QLabel(""); self.badge_p2.setObjectName("TagBadge")
             self.badge_sp = QLabel(""); self.badge_sp.setObjectName("TagBadge")
+            self.badge_sp1 = QLabel(""); self.badge_sp1.setObjectName("TagBadge")
+            self.badge_sp2 = QLabel(""); self.badge_sp2.setObjectName("TagBadge")
+            self.badge_cal_amb = QLabel(""); self.badge_cal_amb.setObjectName("TagBadge")
+            self.badge_cal_p1 = QLabel(""); self.badge_cal_p1.setObjectName("TagBadge")
+            self.badge_cal_p2 = QLabel(""); self.badge_cal_p2.setObjectName("TagBadge")
             self.badge_estado = QLabel(""); self.badge_estado.setObjectName("TagBadge")
             self._tag_bar.addWidget(self.badge_amb)
             self._tag_bar.addWidget(self.badge_p1)
             self._tag_bar.addWidget(self.badge_p2)
             self._tag_bar.addWidget(self.badge_sp)
+            self._tag_bar.addWidget(self.badge_sp1)
+            self._tag_bar.addWidget(self.badge_sp2)
+            self._tag_bar.addWidget(self.badge_cal_amb)
+            self._tag_bar.addWidget(self.badge_cal_p1)
+            self._tag_bar.addWidget(self.badge_cal_p2)
             self._tag_bar.addWidget(self.badge_estado)
             # Insertar barra antes de los controles
             parent_layout: QVBoxLayout = self.layout()  # type: ignore
@@ -273,6 +366,11 @@ class TunnelDetailView(QWidget):
             set_badge(self.badge_p1, "temp_pulpa1", "P1")
             set_badge(self.badge_p2, "temp_pulpa2", "P2")
             set_badge(self.badge_sp, "setpoint", "SP")
+            set_badge(self.badge_sp1, "setpoint_pulpa1", "SP1")
+            set_badge(self.badge_sp2, "setpoint_pulpa2", "SP2")
+            set_badge(self.badge_cal_amb, "cal_temp_ambiente", "Cal Amb")
+            set_badge(self.badge_cal_p1, "cal_temp_pulpa1", "Cal P1")
+            set_badge(self.badge_cal_p2, "cal_temp_pulpa2", "Cal P2")
             # Estado puede ser lectura o comando
             if "estado" in t:
                 set_badge(self.badge_estado, "estado", "Estado")
@@ -323,7 +421,12 @@ class TagEditorDialog(QDialog):
             ("temp_pulpa1", "Pulpa 1", "REAL"),
             ("temp_pulpa2", "Pulpa 2", "REAL"),
             ("setpoint", "Setpoint", "REAL"),
+            ("setpoint_pulpa1", "SP Pulpa 1", "REAL"),
+            ("setpoint_pulpa2", "SP Pulpa 2", "REAL"),
             ("estado", "Estado", "BOOL"),
+            ("cal_temp_ambiente", "Calib Ambiente", "REAL"),
+            ("cal_temp_pulpa1", "Calib Pulpa 1", "REAL"),
+            ("cal_temp_pulpa2", "Calib Pulpa 2", "REAL"),
         ]
         for key, title, default_type in keys:
             row = QHBoxLayout()

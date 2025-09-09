@@ -5,7 +5,7 @@
     "slot": 1,
     "port": 102,
     "poll_interval_ms": 1000,
-    "simulation": false
+    "simulation": true
   },
   "tunnels": [
     {
@@ -136,7 +136,11 @@
           "area": "DB"
         }
       },
-      "calibrations": {}
+      "calibrations": {
+        "temp_ambiente": 0.0,
+        "temp_pulpa1": 0.0,
+        "temp_pulpa2": 0.0
+      }
     },
     {
       "id": 4,

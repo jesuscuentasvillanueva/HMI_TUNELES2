@@ -25,6 +25,8 @@ from time import strftime, localtime
 
 class MainWindow(QMainWindow):
     request_setpoint = pyqtSignal(int, float)
+    request_setpoint_p1 = pyqtSignal(int, float)
+    request_setpoint_p2 = pyqtSignal(int, float)
     request_estado = pyqtSignal(int, bool)
     apply_settings = pyqtSignal(object)
     update_tunnel_tags = pyqtSignal(int, dict)
@@ -107,6 +109,8 @@ class MainWindow(QMainWindow):
         # Reenvío de acciones de detalle hacia afuera
         self.view_detail.request_setpoint.connect(self.request_setpoint)
         self.view_detail.request_estado.connect(self.request_estado)
+        self.view_detail.request_setpoint_p1.connect(self.request_setpoint_p1)
+        self.view_detail.request_setpoint_p2.connect(self.request_setpoint_p2)
         self.view_detail.update_tunnel_tags.connect(self._on_update_tunnel_tags)
         self.view_detail.update_tunnel_tags.connect(self.update_tunnel_tags)
         self.view_detail.update_tunnel_calibrations.connect(self._on_update_tunnel_calibrations)

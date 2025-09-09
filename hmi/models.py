@@ -38,6 +38,8 @@ class TunnelData:
     temp_pulpa1: float = 0.0
     temp_pulpa2: float = 0.0
     setpoint: float = 0.0
+    setpoint_pulpa1: float = 0.0
+    setpoint_pulpa2: float = 0.0
     estado: bool = False
     ts: float = field(default_factory=time)
 

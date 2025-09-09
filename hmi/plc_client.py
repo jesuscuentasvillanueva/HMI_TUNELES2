@@ -30,6 +30,16 @@ class BasePLC:
     def write_estado(self, tunnel_id: int, value: bool) -> bool:
         raise NotImplementedError
 
+    # Nuevos: setpoints independientes de pulpa y escritura genérica por clave
+    def write_setpoint_p1(self, tunnel_id: int, value: float) -> bool:
+        raise NotImplementedError
+
+    def write_setpoint_p2(self, tunnel_id: int, value: float) -> bool:
+        raise NotImplementedError
+
+    def write_by_key(self, tunnel_id: int, tag_key: str, value) -> bool:
+        raise NotImplementedError
+
     def last_error(self) -> Optional[str]:
         return self._last_error
 
@@ -164,8 +174,20 @@ class Snap7PLC(BasePLC):
                 p1 = self._read_tag(ta["temp_pulpa1"]) or 0.0
                 p2 = self._read_tag(ta["temp_pulpa2"]) or 0.0
                 sp = self._read_tag(ta["setpoint"]) or 0.0
+                sp_p1 = self._read_tag(ta["setpoint_pulpa1"]) if "setpoint_pulpa1" in ta else 0.0
+                sp_p2 = self._read_tag(ta["setpoint_pulpa2"]) if "setpoint_pulpa2" in ta else 0.0
                 est = self._read_tag(ta["estado"]) or False
-                td = TunnelData(id=tcfg.id, name=tcfg.name, temp_ambiente=float(amb), temp_pulpa1=float(p1), temp_pulpa2=float(p2), setpoint=float(sp), estado=bool(est))
+                td = TunnelData(
+                    id=tcfg.id,
+                    name=tcfg.name,
+                    temp_ambiente=float(amb),
+                    temp_pulpa1=float(p1),
+                    temp_pulpa2=float(p2),
+                    setpoint=float(sp),
+                    setpoint_pulpa1=float(sp_p1 or 0.0),
+                    setpoint_pulpa2=float(sp_p2 or 0.0),
+                    estado=bool(est),
+                )
                 out[tid] = td
             except Exception as e:
                 self._last_error = f"Lectura túnel {tcfg.id} fallida: {e}"
@@ -198,3 +220,42 @@ class Snap7PLC(BasePLC):
         if not self._connected and not self.connect():
             return False
         return self._write_tag(tag, bool(value))
+
+    def write_setpoint_p1(self, tunnel_id: int, value: float) -> bool:
+        tcfg = self.tunnels_map.get(tunnel_id)
+        if not tcfg:
+            self._last_error = f"Túnel {tunnel_id} no encontrado"
+            return False
+        tag = tcfg.tags.get("setpoint_pulpa1")
+        if not tag:
+            self._last_error = f"Tag setpoint_pulpa1 no definido para túnel {tunnel_id}"
+            return False
+        if not self._connected and not self.connect():
+            return False
+        return self._write_tag(tag, float(value))
+
+    def write_setpoint_p2(self, tunnel_id: int, value: float) -> bool:
+        tcfg = self.tunnels_map.get(tunnel_id)
+        if not tcfg:
+            self._last_error = f"Túnel {tunnel_id} no encontrado"
+            return False
+        tag = tcfg.tags.get("setpoint_pulpa2")
+        if not tag:
+            self._last_error = f"Tag setpoint_pulpa2 no definido para túnel {tunnel_id}"
+            return False
+        if not self._connected and not self.connect():
+            return False
+        return self._write_tag(tag, float(value))
+
+    def write_by_key(self, tunnel_id: int, tag_key: str, value) -> bool:
+        tcfg = self.tunnels_map.get(tunnel_id)
+        if not tcfg:
+            self._last_error = f"Túnel {tunnel_id} no encontrado"
+            return False
+        tag = tcfg.tags.get(tag_key)
+        if not tag:
+            self._last_error = f"Tag {tag_key} no definido para túnel {tunnel_id}"
+            return False
+        if not self._connected and not self.connect():
+            return False
+        return self._write_tag(tag, value)

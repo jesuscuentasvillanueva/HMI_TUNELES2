@@ -49,18 +49,6 @@ class Poller(QObject):
             status = self.plc.is_connected()
             self._emit_status(status)
             if data:
-                # Aplicar calibraciones por túnel antes de emitir
-                for tid, td in data.items():
-                    cfg = self.tunnels_map.get(tid)
-                    if cfg and getattr(cfg, "calibrations", None):
-                        cal = cfg.calibrations
-                        try:
-                            td.temp_ambiente = float(td.temp_ambiente) + float(cal.get("temp_ambiente", 0.0))
-                            td.temp_pulpa1 = float(td.temp_pulpa1) + float(cal.get("temp_pulpa1", 0.0))
-                            td.temp_pulpa2 = float(td.temp_pulpa2) + float(cal.get("temp_pulpa2", 0.0))
-                        except Exception:
-                            pass
-                # Emitir
                 self.updated.emit(data)
         except Exception:
             self._emit_status(False)
@@ -78,6 +66,24 @@ class Poller(QObject):
     def write_estado(self, tunnel_id: int, value: bool):
         try:
             ok = self.plc.write_estado(tunnel_id, value)
+            if not ok:
+                self._emit_status(False)
+        except Exception:
+            self._emit_status(False)
+
+    @pyqtSlot(int, float)
+    def write_setpoint_p1(self, tunnel_id: int, value: float):
+        try:
+            ok = self.plc.write_setpoint_p1(tunnel_id, value)
+            if not ok:
+                self._emit_status(False)
+        except Exception:
+            self._emit_status(False)
+
+    @pyqtSlot(int, float)
+    def write_setpoint_p2(self, tunnel_id: int, value: float):
+        try:
+            ok = self.plc.write_setpoint_p2(tunnel_id, value)
             if not ok:
                 self._emit_status(False)
         except Exception:
@@ -104,5 +110,16 @@ class Poller(QObject):
             if tunnel_id in self.plc.tunnels_map:
                 # Mantener en el objeto también
                 self.plc.tunnels_map[tunnel_id].calibrations = cal
+            # Intentar escribir a PLC si existen tags de calibración
+            for key_src, key_tag in (
+                ("temp_ambiente", "cal_temp_ambiente"),
+                ("temp_pulpa1", "cal_temp_pulpa1"),
+                ("temp_pulpa2", "cal_temp_pulpa2"),
+            ):
+                try:
+                    if key_src in cal:
+                        self.plc.write_by_key(tunnel_id, key_tag, float(cal[key_src]))
+                except Exception:
+                    pass
         except Exception:
             self._emit_status(False)
