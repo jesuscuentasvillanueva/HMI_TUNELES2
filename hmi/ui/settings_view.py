@@ -13,11 +13,13 @@ from PyQt5.QtWidgets import (
 )
 
 from ..models import PLCConfig
+from typing import Optional
 
 
 class SettingsView(QWidget):
     apply_settings = pyqtSignal(object)
     back = pyqtSignal()
+    test_connection = pyqtSignal(object)
 
     def __init__(self, plc_cfg: PLCConfig):
         super().__init__()
@@ -65,16 +67,25 @@ class SettingsView(QWidget):
 
         # Botones
         btns = QHBoxLayout()
+        self.btn_test = QPushButton("Probar conexión")
         self.btn_apply = QPushButton("Aplicar")
         self.btn_apply.setObjectName("Primary")
         self.btn_back = QPushButton("Volver")
+        btns.addWidget(self.btn_test)
+        btns.addStretch(1)
         btns.addWidget(self.btn_apply)
         btns.addWidget(self.btn_back)
         layout.addLayout(btns)
 
+        # Resultado de prueba
+        self.lbl_test = QLabel("")
+        self.lbl_test.setWordWrap(True)
+        layout.addWidget(self.lbl_test)
+
         # Conexiones
         self.btn_back.clicked.connect(self.back.emit)
         self.btn_apply.clicked.connect(self._emit_apply)
+        self.btn_test.clicked.connect(self._emit_test)
 
     def set_values(self, cfg: PLCConfig):
         self.ed_ip.setText(cfg.ip)
@@ -94,3 +105,26 @@ class SettingsView(QWidget):
             simulation=bool(self.chk_sim.isChecked()),
         )
         self.apply_settings.emit(cfg)
+
+    def _emit_test(self):
+        cfg = PLCConfig(
+            ip=self.ed_ip.text().strip() or "192.168.0.1",
+            rack=int(self.sp_rack.value()),
+            slot=int(self.sp_slot.value()),
+            port=int(self.sp_port.value()),
+            poll_interval_ms=int(self.sp_poll.value()),
+            simulation=bool(self.chk_sim.isChecked()),
+        )
+        # Indicar estado inicial
+        self.show_test_result("Probando conexión...", None)
+        self.test_connection.emit(cfg)
+
+    def show_test_result(self, text: str, success: Optional[bool]):
+        # success True/False/None (en curso)
+        if success is True:
+            self.lbl_test.setStyleSheet("color: #10b981; font-weight: 600;")
+        elif success is False:
+            self.lbl_test.setStyleSheet("color: #f87171; font-weight: 600;")
+        else:
+            self.lbl_test.setStyleSheet("color: #9fb0bf;")
+        self.lbl_test.setText(text)

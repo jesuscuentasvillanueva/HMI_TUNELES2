@@ -74,14 +74,56 @@ class Snap7PLC(BasePLC):
                 PA = 0x82
                 MK = 0x83
             self._Areas = _FallbackAreas
-        self.client = self._Client()
+        # Crear cliente diferido: lo reinstanciaremos en connect() para asegurar
+        # que se crea en el hilo correcto y con parámetros limpios
+        self.client = None
         self._connected = False
 
     def connect(self) -> bool:
         try:
             if not self._connected:
+                # Re-crear Client cada intento para evitar "Cannot change this param now"
+                # y asegurar que el objeto se construye en el hilo del Poller
+                try:
+                    if self.client is not None:
+                        try:
+                            self.client.disconnect()
+                        except Exception:
+                            pass
+                    self.client = self._Client()
+                except Exception as _:
+                    pass
+
                 # Nota: puerto 102 es el predeterminado; algunos wrappers no lo exponen directamente.
-                self.client.connect(self.cfg.ip, self.cfg.rack, self.cfg.slot)
+                # Pasar puerto desde configuración si está disponible y reintentar con 102 si falla
+                port_to_use = getattr(self.cfg, "port", 102) or 102
+                connected = False
+                try:
+                    try:
+                        self.client.connect(self.cfg.ip, self.cfg.rack, self.cfg.slot, port_to_use)
+                        connected = True
+                    except TypeError:
+                        # Compatibilidad con versiones antiguas de python-snap7 sin argumento tcpport
+                        self.client.connect(self.cfg.ip, self.cfg.rack, self.cfg.slot)
+                        connected = True
+                except Exception as e1:
+                    # Fallback con puerto 102 si el puerto configurado no es 102
+                    if port_to_use != 102:
+                        try:
+                            try:
+                                self.client.connect(self.cfg.ip, self.cfg.rack, self.cfg.slot, 102)
+                                connected = True
+                            except TypeError:
+                                self.client.connect(self.cfg.ip, self.cfg.rack, self.cfg.slot)
+                                connected = True
+                        except Exception as e2:
+                            self._last_error = f"Conexión fallida (puerto {port_to_use} y fallback 102): {e1} / {e2}"
+                            self._connected = False
+                            return False
+                    else:
+                        self._last_error = f"Conexión fallida (puerto {port_to_use}): {e1}"
+                        self._connected = False
+                        return False
                 self._connected = True
             return True
         except Exception as e:
@@ -97,6 +139,15 @@ class Snap7PLC(BasePLC):
         self._connected = False
 
     def is_connected(self) -> bool:
+        try:
+            if self.client is not None:
+                # Algunas versiones exponen get_connected()
+                if hasattr(self.client, "get_connected"):
+                    ok = bool(self.client.get_connected())
+                    self._connected = ok
+                    return ok
+        except Exception:
+            self._connected = False
         return self._connected
 
     def _read_tag(self, tag: TagAddress) -> Optional[Union[float, bool]]:

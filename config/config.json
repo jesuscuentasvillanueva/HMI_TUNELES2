@@ -1,11 +1,11 @@
 {
   "plc": {
-    "ip": "192.168.0.1",
+    "ip": "192.168.0.20",
     "rack": 0,
     "slot": 1,
     "port": 102,
     "poll_interval_ms": 1000,
-    "simulation": true
+    "simulation": false
   },
   "tunnels": [
     {
@@ -34,16 +34,65 @@
           "area": "DB"
         },
         "setpoint": {
-          "db": 201,
+          "db": 6,
+          "start": 52,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "setpoint_pulpa1": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "setpoint_pulpa2": {
+          "db": 1,
           "start": 0,
           "type": "REAL",
           "bit": 0,
           "area": "DB"
         },
         "estado": {
-          "db": 301,
+          "db": 1,
           "start": 0,
           "type": "BOOL",
+          "bit": 1,
+          "area": "Q"
+        },
+        "cmd_encender": {
+          "db": 1,
+          "start": 4,
+          "type": "BOOL",
+          "bit": 1,
+          "area": "M"
+        },
+        "cmd_apagar": {
+          "db": 1,
+          "start": 4,
+          "type": "BOOL",
+          "bit": 2,
+          "area": "M"
+        },
+        "cal_temp_ambiente": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cal_temp_pulpa1": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cal_temp_pulpa2": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
           "bit": 0,
           "area": "DB"
         }

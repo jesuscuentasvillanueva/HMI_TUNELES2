@@ -11,6 +11,7 @@ from .plc_client import BasePLC
 class Poller(QObject):
     updated = pyqtSignal(dict)  # Dict[int, TunnelData]
     plc_status_changed = pyqtSignal(bool)
+    plc_error = pyqtSignal(str)
     stop_requested = pyqtSignal()
 
     def __init__(self, plc: BasePLC, tunnels: List[TunnelConfig], interval_ms: int = 1000):
@@ -37,6 +38,10 @@ class Poller(QObject):
         self._running = False
         if self._timer is not None:
             self._timer.stop()
+        try:
+            self.plc.disconnect()
+        except Exception:
+            pass
 
     def _emit_status(self, status: bool):
         if status != self._last_status:
@@ -50,8 +55,19 @@ class Poller(QObject):
             self._emit_status(status)
             if data:
                 self.updated.emit(data)
+            if not status:
+                # Enviar último error si disponible
+                err = self.plc.last_error()
+                if err:
+                    self.plc_error.emit(str(err))
         except Exception:
             self._emit_status(False)
+            try:
+                err = self.plc.last_error()
+                if err:
+                    self.plc_error.emit(str(err))
+            except Exception:
+                pass
 
     @pyqtSlot(int, float)
     def write_setpoint(self, tunnel_id: int, value: float):
@@ -65,9 +81,29 @@ class Poller(QObject):
     @pyqtSlot(int, bool)
     def write_estado(self, tunnel_id: int, value: bool):
         try:
-            ok = self.plc.write_estado(tunnel_id, value)
-            if not ok:
-                self._emit_status(False)
+            # Si existen tags de comando por pulso, usarlos
+            key = None
+            try:
+                tags = self.tunnels_map.get(tunnel_id).tags if tunnel_id in self.tunnels_map else {}
+            except Exception:
+                tags = {}
+            if value and tags and "cmd_encender" in tags:
+                key = "cmd_encender"
+            elif (not value) and tags and "cmd_apagar" in tags:
+                key = "cmd_apagar"
+
+            if key:
+                ok = self.plc.write_by_key(tunnel_id, key, True)
+                if not ok:
+                    self._emit_status(False)
+                    return
+                # Generar pulso: volver a 0 tras 200 ms
+                QTimer.singleShot(200, lambda tid=tunnel_id, k=key: self.plc.write_by_key(tid, k, False))
+            else:
+                # Fallback: escribir directamente el estado booleano
+                ok = self.plc.write_estado(tunnel_id, value)
+                if not ok:
+                    self._emit_status(False)
         except Exception:
             self._emit_status(False)
 

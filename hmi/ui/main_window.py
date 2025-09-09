@@ -64,6 +64,12 @@ class MainWindow(QMainWindow):
         self.lbl_update = QLabel("Últ. act.: --:--:--")
         self.lbl_update.setObjectName("UpdateLabel")
 
+        # Pequeña etiqueta para errores de PLC
+        self.lbl_err = QLabel("")
+        self.lbl_err.setObjectName("TopErrorLabel")
+        self.lbl_err.setStyleSheet("color: #f87171;")
+        self.lbl_err.setWordWrap(False)
+
         btn_go_dashboard = QPushButton("Tablero")
         btn_go_dashboard.setProperty("size", "lg")
         btn_go_dashboard.setMinimumHeight(44)
@@ -77,6 +83,8 @@ class MainWindow(QMainWindow):
         top.addWidget(self.lbl_clock)
         top.addSpacing(12)
         top.addWidget(self.lbl_update)
+        top.addSpacing(12)
+        top.addWidget(self.lbl_err)
         top.addStretch(1)
         top.addWidget(btn_go_dashboard)
         top.addWidget(btn_settings)
@@ -192,6 +200,20 @@ class MainWindow(QMainWindow):
         # re-polish to apply QSS based on property
         self.lbl_status.style().unpolish(self.lbl_status)
         self.lbl_status.style().polish(self.lbl_status)
+
+    def on_plc_error(self, message: str):
+        # Mostrar texto breve y guardar detalle en tooltip
+        self.lbl_status.setToolTip(message or "")
+        # texto acotado
+        short = message or ""
+        if len(short) > 80:
+            short = short[:77] + "..."
+        self.lbl_err.setText(short)
+        # limpiar tras unos segundos
+        try:
+            QTimer.singleShot(7000, lambda: self.lbl_err.setText(""))
+        except Exception:
+            pass
 
     def _tick_clock(self):
         self.lbl_clock.setText(strftime("%H:%M:%S", localtime()))

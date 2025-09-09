@@ -424,6 +424,8 @@ class TagEditorDialog(QDialog):
             ("setpoint_pulpa1", "SP Pulpa 1", "REAL"),
             ("setpoint_pulpa2", "SP Pulpa 2", "REAL"),
             ("estado", "Estado", "BOOL"),
+            ("cmd_encender", "CMD Encender (pulso)", "BOOL"),
+            ("cmd_apagar", "CMD Apagar (pulso)", "BOOL"),
             ("cal_temp_ambiente", "Calib Ambiente", "REAL"),
             ("cal_temp_pulpa1", "Calib Pulpa 1", "REAL"),
             ("cal_temp_pulpa2", "Calib Pulpa 2", "REAL"),

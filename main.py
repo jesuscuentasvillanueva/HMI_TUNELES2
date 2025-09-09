@@ -53,6 +53,7 @@ def main():
     # Conexiones señales/slots
     poller.updated.connect(window.on_data_update)
     poller.plc_status_changed.connect(window.on_plc_status)
+    poller.plc_error.connect(window.on_plc_error)
 
     window.request_setpoint.connect(poller.write_setpoint)
     window.request_setpoint_p1.connect(poller.write_setpoint_p1)
@@ -84,6 +85,7 @@ def main():
         # Re-conectar señales
         poller.updated.connect(window.on_data_update)
         poller.plc_status_changed.connect(window.on_plc_status)
+        poller.plc_error.connect(window.on_plc_error)
         window.request_setpoint.connect(poller.write_setpoint)
         window.request_setpoint_p1.connect(poller.write_setpoint_p1)
         window.request_setpoint_p2.connect(poller.write_setpoint_p2)
@@ -96,6 +98,31 @@ def main():
         poller_thread.start()
 
     window.apply_settings.connect(apply_settings)
+
+    # Prueba de conexión desde vista de configuración
+    def test_connection(plc_cfg):
+        if getattr(plc_cfg, "simulation", False):
+            window.view_settings.show_test_result("Modo Simulación activo. No se requiere conexión.", True)
+            return
+        try:
+            tmp = Snap7PLC(plc_cfg, tunnels)
+        except Exception as e:
+            window.view_settings.show_test_result(f"No se pudo inicializar Snap7: {e}", False)
+            return
+        ok = tmp.connect()
+        if ok:
+            window.view_settings.show_test_result(
+                f"Conectado a {plc_cfg.ip}:{getattr(plc_cfg, 'port', 102)} (rack {plc_cfg.rack}, slot {plc_cfg.slot})",
+                True,
+            )
+            try:
+                tmp.disconnect()
+            except Exception:
+                pass
+        else:
+            window.view_settings.show_test_result(tmp.last_error() or "Fallo de conexión", False)
+
+    window.view_settings.test_connection.connect(test_connection)
 
     # Arrancar sondeo
     poller_thread.started.connect(poller.start)
