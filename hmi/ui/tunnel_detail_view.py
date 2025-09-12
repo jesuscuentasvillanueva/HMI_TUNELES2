@@ -789,8 +789,18 @@ class TagEditorDialog(QDialog):
         self.setWindowTitle(f"Editar Tags - {cfg.name}")
         self._cfg = cfg
         self._edits = {}
-        form = QFormLayout(self)
+        # Contenedor con scroll para muchos campos
+        root = QVBoxLayout(self)
+        root.setContentsMargins(8, 8, 8, 8)
+        root.setSpacing(8)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        root.addWidget(scroll)
+        content = QWidget()
+        form = QFormLayout(content)
         form.setSpacing(8)
+        scroll.setWidget(content)
         keys = [
             ("temp_ambiente", "Ambiente", "REAL"),
             ("temp_pulpa1", "Pulpa 1", "REAL"),
@@ -844,7 +854,7 @@ class TagEditorDialog(QDialog):
         btn_ok.clicked.connect(self.accept)
         btn_cancel.clicked.connect(self.reject)
         btns.addWidget(btn_ok); btns.addWidget(btn_cancel)
-        form.addRow(btns)
+        root.addLayout(btns)
 
     def get_tags(self) -> dict:
         out = {}
