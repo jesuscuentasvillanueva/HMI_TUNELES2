@@ -268,6 +268,17 @@ QPushButton#Danger:hover {
   background-color: #dc2626;
 }
 
+/* Botón de advertencia (Deshielo) */
+QPushButton#Warning {
+  background-color: #f59e0b; /* amber-500 */
+  border: 1px solid #b45309;
+  color: #0b1014;
+  font-weight: 700;
+}
+QPushButton#Warning:hover {
+  background-color: #fbbf24; /* amber-400 */
+}
+
 /* Estado del túnel como "chip" */
 QLabel#StateTag {
   padding: 2px 10px;
@@ -286,6 +297,13 @@ QLabel#StateTag[state="off"] {
   background-color: #3a1b1b;
   color: #fca5a5;
   border: 1px solid #7f1d1d;
+}
+
+/* Chip especial para deshielo */
+QLabel#StateTag[state="defrost"] {
+  background-color: #3a2a0a;
+  color: #fbbf24; /* amber-400 */
+  border: 1px solid #92400e;
 }
 
 /* Tamaño grande para el chip de estado en el detalle */
@@ -347,6 +365,11 @@ QPushButton#Danger[size="xl"], QPushButton#Danger[size="lg"] {
   background-color: #b91c1c;
   border: 1px solid #b91c1c;
   color: #fff;
+}
+QPushButton#Warning[size="xl"], QPushButton#Warning[size="lg"] {
+  background-color: #f59e0b;
+  border: 1px solid #b45309;
+  color: #0b1014;
 }
 
 /* Card action button */

@@ -28,6 +28,8 @@ class MainWindow(QMainWindow):
     request_setpoint_p1 = pyqtSignal(int, float)
     request_setpoint_p2 = pyqtSignal(int, float)
     request_estado = pyqtSignal(int, bool)
+    request_deshielo = pyqtSignal(int)
+    request_deshielo_set = pyqtSignal(int, bool)
     apply_settings = pyqtSignal(object)
     update_tunnel_tags = pyqtSignal(int, dict)
     update_tunnel_calibrations = pyqtSignal(int, dict)
@@ -119,6 +121,16 @@ class MainWindow(QMainWindow):
         self.view_detail.request_estado.connect(self.request_estado)
         self.view_detail.request_setpoint_p1.connect(self.request_setpoint_p1)
         self.view_detail.request_setpoint_p2.connect(self.request_setpoint_p2)
+        # Deshielo
+        try:
+            self.view_detail.request_deshielo_set.connect(self.request_deshielo_set)
+        except Exception:
+            pass
+        # Compatibilidad antigua (si existiera señal simple)
+        try:
+            self.view_detail.request_deshielo.connect(self.request_deshielo)
+        except Exception:
+            pass
         self.view_detail.update_tunnel_tags.connect(self._on_update_tunnel_tags)
         self.view_detail.update_tunnel_tags.connect(self.update_tunnel_tags)
         self.view_detail.update_tunnel_calibrations.connect(self._on_update_tunnel_calibrations)
@@ -175,6 +187,12 @@ class MainWindow(QMainWindow):
             self.lbl_update.setText(f"Últ. act.: {strftime('%H:%M:%S', localtime())}")
         except Exception:
             pass
+        # Si estamos en el detalle, refrescar inmediatamente el túnel activo
+        if self._current_tunnel_id and self._current_tunnel_id in data:
+            try:
+                self.view_detail.update_data(data[self._current_tunnel_id])
+            except Exception:
+                pass
 
     def _on_update_ui_pref(self, key: str, value):
         # Guardar preferencia en config.json

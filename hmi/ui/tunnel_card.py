@@ -90,15 +90,17 @@ class TunnelCard(QFrame):
         # Sin coloreo por nivel para máxima legibilidad
 
         # Tooltip informativo
-        self.setToolTip(
-            f"{self.config.name}\nAmbiente: {data.temp_ambiente:.1f} °C\nPulpa 1: {data.temp_pulpa1:.1f} °C\nPulpa 2: {data.temp_pulpa2:.1f} °C\nSetpoint: {data.setpoint:.1f} °C\nEstado: {'Encendido' if data.estado else 'Apagado'}"
-        )
-        if data.estado:
-            self.state_tag.setText("Encendido")
-            self.state_tag.setProperty("state", "on")
+        if getattr(data, "deshielo_activo", False):
+            state_text = "Deshielo"
+            state_prop = "defrost"
         else:
-            self.state_tag.setText("Apagado")
-            self.state_tag.setProperty("state", "off")
+            state_text = "Encendido" if data.estado else "Apagado"
+            state_prop = "on" if data.estado else "off"
+        self.setToolTip(
+            f"{self.config.name}\nAmbiente: {data.temp_ambiente:.1f} °C\nPulpa 1: {data.temp_pulpa1:.1f} °C\nPulpa 2: {data.temp_pulpa2:.1f} °C\nSetpoint: {data.setpoint:.1f} °C\nEstado: {state_text}"
+        )
+        self.state_tag.setText(state_text)
+        self.state_tag.setProperty("state", state_prop)
         # Update status dot color
         self.status_dot.setProperty("state", "on" if data.estado else "off")
         # Re-apply style to reflect property change on the chip and dot

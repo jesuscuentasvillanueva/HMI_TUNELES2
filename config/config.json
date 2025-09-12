@@ -75,6 +75,20 @@
           "bit": 2,
           "area": "M"
         },
+        "deshielo_activo": {
+          "db": 1,
+          "start": 4,
+          "type": "BOOL",
+          "bit": 1,
+          "area": "M"
+        },
+        "cmd_deshielo": {
+          "db": 1,
+          "start": 4,
+          "type": "BOOL",
+          "bit": 1,
+          "area": "M"
+        },
         "cal_temp_ambiente": {
           "db": 1,
           "start": 0,
@@ -653,5 +667,9 @@
       },
       "calibrations": {}
     }
-  ]
+  ],
+  "ui": {
+    "sec_sp_adv_open": false,
+    "sec_cal_open": false
+  }
 }

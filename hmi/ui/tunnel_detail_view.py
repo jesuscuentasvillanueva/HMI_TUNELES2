@@ -18,6 +18,7 @@ class TunnelDetailView(QWidget):
     back = pyqtSignal()
     # Preferencias UI (clave, valor)
     update_ui_pref = pyqtSignal(str, object)
+    request_deshielo_set = pyqtSignal(int, bool)
 
     def __init__(self):
         super().__init__()
@@ -33,6 +34,7 @@ class TunnelDetailView(QWidget):
         self._cal_p1_dirty = False
         self._cal_p2_dirty = False
         self._step = 0.1
+        self._defrost_active = False
         self._build_ui()
 
     def _build_ui(self):
@@ -88,11 +90,17 @@ class TunnelDetailView(QWidget):
         p1_w, self.val_p1 = metric_block("Pulpa 1")
         p2_w, self.val_p2 = metric_block("Pulpa 2")
         sp_w, self.val_sp = metric_block("Setpoint")
+        # Métrica adicional: posición de válvula (%)
+        valve_w = QWidget(); vb = QVBoxLayout(valve_w); vb.setContentsMargins(0,0,0,0); vb.setSpacing(2)
+        lbl_valve = QLabel("Válvula"); lbl_valve.setProperty("class", "metricLabel")
+        self.val_valve = QLabel("-- %"); self.val_valve.setProperty("class", "bigValue"); self.val_valve.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        vb.addWidget(lbl_valve); vb.addWidget(self.val_valve)
 
         metrics.addWidget(amb_w, 0, 0)
         metrics.addWidget(p1_w, 0, 1)
         metrics.addWidget(p2_w, 1, 0)
         metrics.addWidget(sp_w, 1, 1)
+        metrics.addWidget(valve_w, 2, 0, 1, 2)
 
         layout.addLayout(metrics)
 
@@ -112,6 +120,13 @@ class TunnelDetailView(QWidget):
 
         controls.addWidget(self.btn_on)
         controls.addWidget(self.btn_off)
+        # Botón Deshielo
+        self.btn_defrost = QPushButton("Deshielo ON")
+        self.btn_defrost.setObjectName("Warning")
+        self.btn_defrost.setProperty("size", "lg")
+        self.btn_defrost.setMinimumHeight(48)
+        self.btn_defrost.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        controls.addWidget(self.btn_defrost)
 
         # Barra de paso alineada a la derecha
         step_bar = QHBoxLayout()
@@ -317,6 +332,7 @@ class TunnelDetailView(QWidget):
         self.btn_back.clicked.connect(self.back.emit)
         self.btn_on.clicked.connect(self._on_on)
         self.btn_off.clicked.connect(self._on_off)
+        self.btn_defrost.clicked.connect(self._on_defrost)
         self.btn_apply_sp.clicked.connect(self._on_apply_sp)
         self.btn_inc_sp.clicked.connect(self._on_inc)
         self.btn_dec_sp.clicked.connect(self._on_dec)
@@ -426,6 +442,28 @@ class TunnelDetailView(QWidget):
             self.state_chip.setProperty("state", "off")
             self.status_dot.setProperty("state", "off")
             self.header_frame.setProperty("on", "false")
+        # Visualización de deshielo y texto del botón
+        try:
+            self._defrost_active = bool(getattr(data, "deshielo_activo", False))
+            if self._defrost_active:
+                self.state_chip.setText("Deshielo")
+                self.state_chip.setProperty("state", "defrost")
+                try:
+                    self.btn_defrost.setText("Deshielo OFF")
+                except Exception:
+                    pass
+            else:
+                try:
+                    self.btn_defrost.setText("Deshielo ON")
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        # Posición de válvula
+        try:
+            self.val_valve.setText(f"{float(getattr(data, 'valvula_posicion', 0.0)):.0f} %")
+        except Exception:
+            pass
         # Re-polish para aplicar QSS reactivo
         for w in (self.state_chip, self.status_dot, self.header_frame):
             try:
@@ -441,7 +479,7 @@ class TunnelDetailView(QWidget):
             for w in (
                 self.btn_on, self.btn_off,
                 self.btn_apply_sp, self.btn_apply_sp_p1, self.btn_apply_sp_p2,
-                self.btn_apply_cal,
+                self.btn_apply_cal, self.btn_defrost,
             ):
                 w.setEnabled(online)
         except Exception:
@@ -453,6 +491,7 @@ class TunnelDetailView(QWidget):
                 self.val_p1.setText("--.- °C")
                 self.val_p2.setText("--.- °C")
                 self.val_sp.setText("--.- °C")
+                self.val_valve.setText("-- %")
                 self.state_chip.setText("Apagado")
                 self.state_chip.setProperty("state", "off")
                 self.status_dot.setProperty("state", "off")
@@ -470,6 +509,11 @@ class TunnelDetailView(QWidget):
     def _on_off(self):
         if self.config:
             self.request_estado.emit(self.config.id, False)
+
+    def _on_defrost(self):
+        if self.config:
+            # Toggle ON/OFF según estado actual
+            self.request_deshielo_set.emit(self.config.id, (not self._defrost_active))
 
     def _on_apply_sp(self):
         if self.config:
@@ -757,6 +801,13 @@ class TagEditorDialog(QDialog):
             ("estado", "Estado", "BOOL"),
             ("cmd_encender", "CMD Encender (pulso)", "BOOL"),
             ("cmd_apagar", "CMD Apagar (pulso)", "BOOL"),
+            ("deshielo_activo", "Deshielo Activo (BOOL)", "BOOL"),
+            ("cmd_deshielo", "CMD Deshielo (pulso)", "BOOL"),
+            ("cmd_deshielo_on", "CMD Deshielo ON (pulso)", "BOOL"),
+            ("cmd_deshielo_off", "CMD Deshielo OFF (pulso)", "BOOL"),
+            ("cmd_cancelar_deshielo", "CMD Cancelar Deshielo (pulso)", "BOOL"),
+            ("cmd_parar_deshielo", "CMD Parar Deshielo (pulso)", "BOOL"),
+            ("valvula_posicion", "Válvula Posición (%)", "REAL"),
             ("cal_temp_ambiente", "Calib Ambiente", "REAL"),
             ("cal_temp_pulpa1", "Calib Pulpa 1", "REAL"),
             ("cal_temp_pulpa2", "Calib Pulpa 2", "REAL"),

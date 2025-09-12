@@ -41,6 +41,8 @@ class TunnelData:
     setpoint_pulpa1: float = 0.0
     setpoint_pulpa2: float = 0.0
     estado: bool = False
+    deshielo_activo: bool = False
+    valvula_posicion: float = 0.0
     ts: float = field(default_factory=time)
 
 

@@ -62,6 +62,32 @@ class Poller(QObject):
                     self.plc_error.emit(str(err))
         except Exception:
             self._emit_status(False)
+
+    @pyqtSlot(int, bool)
+    def set_deshielo(self, tunnel_id: int, on: bool):
+        """Activa o desactiva deshielo escribiendo un tag de ESTADO (no pulso).
+        Orden de preferencia de tag a escribir (BOOL):
+          deshielo_mando, deshielo_set, deshielo_onoff, deshielo_activo
+        """
+        try:
+            tags = self.tunnels_map.get(tunnel_id).tags if tunnel_id in self.tunnels_map else {}
+        except Exception:
+            tags = {}
+        try:
+            write_key = None
+            for k in ("deshielo_mando", "deshielo_set", "deshielo_onoff", "deshielo_activo"):
+                if k in tags:
+                    write_key = k
+                    break
+            if write_key is None:
+                # No existe tag de estado configurado: intentamos última opción con deshielo_activo
+                write_key = "deshielo_activo"
+            ok = self.plc.write_by_key(tunnel_id, write_key, bool(on))
+            if not ok:
+                self._emit_status(False)
+                return
+        except Exception:
+            self._emit_status(False)
             try:
                 err = self.plc.last_error()
                 if err:
@@ -122,6 +148,33 @@ class Poller(QObject):
             ok = self.plc.write_setpoint_p2(tunnel_id, value)
             if not ok:
                 self._emit_status(False)
+        except Exception:
+            self._emit_status(False)
+
+    @pyqtSlot(int)
+    def trigger_deshielo(self, tunnel_id: int):
+        """Activa un ciclo de deshielo. Preferentemente pulsa el tag cmd_deshielo.
+        Fallback: si no existe cmd_deshielo, intenta escribir deshielo_activo True por 30s.
+        """
+        try:
+            tags = self.tunnels_map.get(tunnel_id).tags if tunnel_id in self.tunnels_map else {}
+        except Exception:
+            tags = {}
+        try:
+            if tags and "cmd_deshielo" in tags:
+                ok = self.plc.write_by_key(tunnel_id, "cmd_deshielo", True)
+                if not ok:
+                    self._emit_status(False)
+                    return
+                # pulso corto por seguridad
+                QTimer.singleShot(200, lambda tid=tunnel_id: self.plc.write_by_key(tid, "cmd_deshielo", False))
+                return
+            # Fallback simulado (no recomendable en PLC real): togglear estado
+            ok = self.plc.write_by_key(tunnel_id, "deshielo_activo", True)
+            if not ok:
+                self._emit_status(False)
+                return
+            QTimer.singleShot(30000, lambda tid=tunnel_id: self.plc.write_by_key(tid, "deshielo_activo", False))
         except Exception:
             self._emit_status(False)
 

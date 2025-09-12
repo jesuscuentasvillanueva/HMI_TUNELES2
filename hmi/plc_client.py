@@ -228,6 +228,22 @@ class Snap7PLC(BasePLC):
                 sp_p1 = self._read_tag(ta["setpoint_pulpa1"]) if "setpoint_pulpa1" in ta else 0.0
                 sp_p2 = self._read_tag(ta["setpoint_pulpa2"]) if "setpoint_pulpa2" in ta else 0.0
                 est = self._read_tag(ta["estado"]) or False
+                defrost = False
+                try:
+                    # Prioridad de tags de estado de deshielo
+                    for k in ("deshielo_activo", "deshielo_mando", "deshielo_set", "deshielo_onoff"):
+                        if k in ta:
+                            defrost = bool(self._read_tag(ta[k]))
+                            break
+                except Exception:
+                    defrost = False
+                valve = 0.0
+                try:
+                    if "valvula_posicion" in ta:
+                        v = self._read_tag(ta["valvula_posicion"])  # REAL 0..100
+                        valve = float(v or 0.0)
+                except Exception:
+                    valve = 0.0
                 td = TunnelData(
                     id=tcfg.id,
                     name=tcfg.name,
@@ -238,6 +254,8 @@ class Snap7PLC(BasePLC):
                     setpoint_pulpa1=float(sp_p1 or 0.0),
                     setpoint_pulpa2=float(sp_p2 or 0.0),
                     estado=bool(est),
+                    deshielo_activo=bool(defrost),
+                    valvula_posicion=float(valve),
                 )
                 out[tid] = td
             except Exception as e:

@@ -26,6 +26,14 @@ class SimulatedPLC:
                 "cal_temp_ambiente": 0.0,
                 "cal_temp_pulpa1": 0.0,
                 "cal_temp_pulpa2": 0.0,
+                # Deshielo
+                "deshielo_activo": False,
+                "deshielo_mando": False,
+                "deshielo_set": False,
+                "deshielo_onoff": False,
+                "_defrost_end": 0.0,
+                # Posición de válvula (0..100 %)
+                "valvula_posicion": 0.0,
             }
         self._connected = True
         self._last_error = None
@@ -64,6 +72,19 @@ class SimulatedPLC:
                 noise = random.uniform(-0.05, 0.05)
                 new = cur + (target - cur) * alpha + noise
                 st[key] = max(-30.0, min(60.0, new))
+            # Posición de válvula (simulada en función del error ambiente)
+            try:
+                error = float(st["setpoint"]) - float(st["temp_ambiente"]) if on else 0.0
+                # mapeo lineal simple: 0..10°C -> 0..100%
+                pos = max(0.0, min(100.0, abs(error) * 10.0))
+                # pequeña inercia
+                st["valvula_posicion"] = 0.8 * float(st.get("valvula_posicion", 0.0)) + 0.2 * pos
+            except Exception:
+                st["valvula_posicion"] = float(st.get("valvula_posicion", 0.0))
+
+            # Expirar deshielo si corresponde (solo si proviene de pulso: _defrost_end>0)
+            if bool(st.get("deshielo_activo", False)) and float(st.get("_defrost_end", 0.0)) > 0.0 and now >= float(st.get("_defrost_end", 0.0)):
+                st["deshielo_activo"] = False
 
     def read_all(self) -> Dict[int, TunnelData]:
         if not self._connected:
@@ -77,6 +98,9 @@ class SimulatedPLC:
             p1 = float(st["temp_pulpa1"]) + float(st.get("cal_temp_pulpa1", 0.0))
             p2 = float(st["temp_pulpa2"]) + float(st.get("cal_temp_pulpa2", 0.0))
 
+            # Estado de deshielo efectivo (OR de tags de estado)
+            defrost_active = bool(st.get("deshielo_activo", False) or st.get("deshielo_mando", False) or st.get("deshielo_set", False) or st.get("deshielo_onoff", False))
+
             out[tid] = TunnelData(
                 id=tcfg.id,
                 name=tcfg.name,
@@ -87,6 +111,8 @@ class SimulatedPLC:
                 setpoint_pulpa1=float(st["setpoint_pulpa1"]),
                 setpoint_pulpa2=float(st["setpoint_pulpa2"]),
                 estado=bool(st["estado"]),
+                deshielo_activo=defrost_active,
+                valvula_posicion=float(st.get("valvula_posicion", 0.0)),
             )
         return out
 
@@ -121,6 +147,16 @@ class SimulatedPLC:
         try:
             if tag_key in ("cal_temp_ambiente", "cal_temp_pulpa1", "cal_temp_pulpa2"):
                 self.state[tunnel_id][tag_key] = float(value)
+                return True
+            if tag_key in ("cmd_deshielo", "cmd_deshielo_on") and bool(value):
+                # activar deshielo por 30 segundos
+                self.state[tunnel_id]["deshielo_activo"] = True
+                self.state[tunnel_id]["_defrost_end"] = time.time() + 30.0
+                return True
+            if tag_key in ("cmd_deshielo_off", "cmd_cancelar_deshielo", "cmd_parar_deshielo") and bool(value):
+                # desactivar deshielo inmediatamente
+                self.state[tunnel_id]["deshielo_activo"] = False
+                self.state[tunnel_id]["_defrost_end"] = 0.0
                 return True
             # fallback: si el estado contiene la clave, actualizar
             if tag_key in self.state[tunnel_id]:

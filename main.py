@@ -59,6 +59,8 @@ def main():
     window.request_setpoint_p1.connect(poller.write_setpoint_p1)
     window.request_setpoint_p2.connect(poller.write_setpoint_p2)
     window.request_estado.connect(poller.write_estado)
+    window.request_deshielo.connect(poller.trigger_deshielo)
+    window.request_deshielo_set.connect(poller.set_deshielo)
     window.update_tunnel_tags.connect(poller.update_tunnel_tags)
     window.update_tunnel_calibrations.connect(poller.update_tunnel_calibrations)
 
@@ -90,6 +92,8 @@ def main():
         window.request_setpoint_p1.connect(poller.write_setpoint_p1)
         window.request_setpoint_p2.connect(poller.write_setpoint_p2)
         window.request_estado.connect(poller.write_estado)
+        window.request_deshielo.connect(poller.trigger_deshielo)
+        window.request_deshielo_set.connect(poller.set_deshielo)
         window.update_tunnel_tags.connect(poller.update_tunnel_tags)
         window.update_tunnel_calibrations.connect(poller.update_tunnel_calibrations)
 
