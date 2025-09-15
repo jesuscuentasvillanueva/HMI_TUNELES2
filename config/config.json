@@ -13,8 +13,8 @@
       "name": "Túnel 1",
       "tags": {
         "temp_ambiente": {
-          "db": 101,
-          "start": 0,
+          "db": 9,
+          "start": 278,
           "type": "REAL",
           "bit": 0,
           "area": "DB"
