@@ -43,6 +43,7 @@ class TunnelData:
     estado: bool = False
     deshielo_activo: bool = False
     valvula_posicion: float = 0.0
+    tiempo_enfriamiento: float = 0.0  # segundos con el túnel encendido
     ts: float = field(default_factory=time)
 
 

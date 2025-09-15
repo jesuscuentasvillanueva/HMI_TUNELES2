@@ -704,7 +704,7 @@
     }
   ],
   "ui": {
-    "sec_sp_adv_open": true,
+    "sec_sp_adv_open": false,
     "sec_cal_open": false
   }
 }

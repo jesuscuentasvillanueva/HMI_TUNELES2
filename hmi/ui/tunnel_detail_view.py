@@ -95,12 +95,18 @@ class TunnelDetailView(QWidget):
         lbl_valve = QLabel("Válvula"); lbl_valve.setProperty("class", "metricLabel")
         self.val_valve = QLabel("-- %"); self.val_valve.setProperty("class", "bigValue"); self.val_valve.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         vb.addWidget(lbl_valve); vb.addWidget(self.val_valve)
+        # Métrica adicional: tiempo de enfriamiento (hh:mm:ss)
+        time_w = QWidget(); vb_t = QVBoxLayout(time_w); vb_t.setContentsMargins(0,0,0,0); vb_t.setSpacing(2)
+        lbl_time = QLabel("Tiempo"); lbl_time.setProperty("class", "metricLabel")
+        self.val_time = QLabel("--:--:--"); self.val_time.setProperty("class", "bigValue"); self.val_time.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        vb_t.addWidget(lbl_time); vb_t.addWidget(self.val_time)
 
         metrics.addWidget(amb_w, 0, 0)
         metrics.addWidget(p1_w, 0, 1)
         metrics.addWidget(p2_w, 1, 0)
         metrics.addWidget(sp_w, 1, 1)
-        metrics.addWidget(valve_w, 2, 0, 1, 2)
+        metrics.addWidget(valve_w, 2, 0)
+        metrics.addWidget(time_w, 2, 1)
 
         layout.addLayout(metrics)
 
@@ -387,17 +393,25 @@ class TunnelDetailView(QWidget):
         self._set_dirty_prop(self.sp_off_amb, False)
         self._set_dirty_prop(self.sp_off_p1, False)
         self._set_dirty_prop(self.sp_off_p2, False)
-        # Mostrar/ocultar SP Pulpa según tags existentes
+        # Mostrar SIEMPRE sección de setpoints avanzados; deshabilitar filas si no hay tags configurados
         try:
             tags = config.tags or {}
             has_p1 = "setpoint_pulpa1" in tags
             has_p2 = "setpoint_pulpa2" in tags
-            self.lbl_sp_p1.setVisible(has_p1)
-            self.row_p1.setVisible(has_p1)
-            self.lbl_sp_p2.setVisible(has_p2)
-            self.row_p2.setVisible(has_p2)
-            # Mantener siempre visible el SP General; ocultar por completo la sección avanzada si no hay P1/P2
-            self.sec_sp_adv.setVisible(has_p1 or has_p2)
+            # Mantener visibles las filas y etiquetas
+            self.lbl_sp_p1.setVisible(True)
+            self.row_p1.setVisible(True)
+            self.lbl_sp_p2.setVisible(True)
+            self.row_p2.setVisible(True)
+            # Habilitar/deshabilitar controles según disponibilidad de tags
+            self.lbl_sp_p1.setEnabled(has_p1)
+            self.row_p1.setEnabled(has_p1)
+            self.btn_apply_sp_p1.setEnabled(False if not has_p1 else self._sp1_dirty)
+            self.lbl_sp_p2.setEnabled(has_p2)
+            self.row_p2.setEnabled(has_p2)
+            self.btn_apply_sp_p2.setEnabled(False if not has_p2 else self._sp2_dirty)
+            # Sección siempre visible (permite al usuario ver que existen y configurar tags)
+            self.sec_sp_adv.setVisible(True)
         except Exception:
             pass
         # Actualizar resúmenes de secciones
@@ -411,6 +425,13 @@ class TunnelDetailView(QWidget):
             self.val_p1.setText(f"{data.temp_pulpa1:.1f} °C")
             self.val_p2.setText(f"{data.temp_pulpa2:.1f} °C")
             self.val_sp.setText(f"{data.setpoint:.1f} °C")
+            # Tiempo de enfriamiento (segundos -> hh:mm:ss)
+            try:
+                secs = int(max(0.0, float(getattr(data, 'tiempo_enfriamiento', 0.0))))
+                h = secs // 3600; m = (secs % 3600) // 60; s = secs % 60
+                self.val_time.setText(f"{h:02d}:{m:02d}:{s:02d}")
+            except Exception:
+                pass
 
             # Solo sobreescribir spinboxes si el usuario no está editando (no foco) y no hay cambios sin aplicar
             if not self.sp_setpoint.hasFocus() and not self._sp_dirty:
@@ -492,6 +513,10 @@ class TunnelDetailView(QWidget):
                 self.val_p2.setText("--.- °C")
                 self.val_sp.setText("--.- °C")
                 self.val_valve.setText("-- %")
+                try:
+                    self.val_time.setText("--:--:--")
+                except Exception:
+                    pass
                 self.state_chip.setText("Apagado")
                 self.state_chip.setProperty("state", "off")
                 self.status_dot.setProperty("state", "off")

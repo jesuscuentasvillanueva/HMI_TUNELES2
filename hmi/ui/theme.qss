@@ -94,16 +94,17 @@ QLabel[class="metric"] {
 }
 
 QLabel[class="metricLabel"] {
-  color: #96a7b5;
-  font-size: 12px;
+  color: #a9bac7;
+  font-size: 14px;
   font-family: "Segoe UI", "Ubuntu", "DejaVu Sans", sans-serif;
+  font-weight: 600;
 }
 
 QLabel[class="metricValue"] {
   color: #e5eef6;
   font-size: 18px;
   font-weight: 600;
-  font-family: "Segoe UI", "Ubuntu", "DejaVu Sans", sans-serif;
+  font-family: "DejaVu Sans Mono", "Ubuntu Mono", monospace;
   padding: 1px 0 2px 0; /* evita recorte superior/inferior */
 }
 
@@ -164,7 +165,7 @@ QLabel[class="metric"][level="low"] { /* por debajo del SP */
 
 /* Densidad compacta ajusta tamaño de fuente */
 QFrame#TunnelCard[density="compact"] QLabel[class="metricValue"] { font-size: 16px; }
-QFrame#TunnelCard[density="compact"] QLabel[class="metricLabel"] { font-size: 11px; }
+QFrame#TunnelCard[density="compact"] QLabel[class="metricLabel"] { font-size: 14px; }
 
 /* Barras de métrica (tendencia vs SP) */
 QProgressBar#MetricBar {

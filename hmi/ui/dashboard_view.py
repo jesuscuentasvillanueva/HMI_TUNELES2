@@ -16,8 +16,8 @@ class DashboardView(QWidget):
     def __init__(self, tunnels: List[TunnelConfig]):
         super().__init__()
         self.tunnels = tunnels
-        # Modo densidad (debe estar antes de construir la UI)
-        self._compact = False
+        # Modo densidad (compacto por defecto para ver todo de un vistazo)
+        self._compact = True
         # Crear tarjetas una sola vez y reutilizarlas al reordenar
         self.cards: Dict[int, TunnelCard] = {}
         for t in self.tunnels:
@@ -34,12 +34,17 @@ class DashboardView(QWidget):
         self._apply_uniform_sizes()
         # Ajuste diferido para que tome el ancho definitivo del contenedor
         QTimer.singleShot(0, self._deferred_layout_update)
+        # Aplicar densidad compacta a las tarjetas
+        try:
+            self.set_density(True)
+        except Exception:
+            pass
 
     def _build_ui(self):
         grid = QGridLayout(self)
-        grid.setContentsMargins(8, 8, 8, 8)
-        grid.setHorizontalSpacing(12)
-        grid.setVerticalSpacing(12)
+        grid.setContentsMargins(20, 20, 20, 20)
+        grid.setHorizontalSpacing(28)
+        grid.setVerticalSpacing(24)
         columns = 4  # valor inicial
         self._grid = grid
         self._columns = columns
@@ -66,20 +71,35 @@ class DashboardView(QWidget):
         self._apply_uniform_sizes()
 
     def _update_columns(self):
-        # Calcular columnas en función del ancho disponible y ancho mínimo por tarjeta
+        # Calcular columnas en función del ancho disponible, maximizando altura de fila legible
         m = self._grid.contentsMargins()
         avail_w = max(0, self.width() - (m.left() + m.right()))
-        spacing = self._grid.horizontalSpacing() or 0
-        min_card_w = 180 if self._compact else 240
-        # Probar cuántas tarjetas entran por fila
+        spacing_h = self._grid.horizontalSpacing() or 0
+        spacing_v = self._grid.verticalSpacing() or 0
+        # Requisitos mínimos de ancho por tarjeta
+        min_card_w = 200 if self._compact else 260
         if avail_w <= 0:
             return
-        # columns = floor((avail_w + spacing) / (min_card_w + spacing))
         base_min = 3 if self._compact else 4
-        columns = max(base_min, min(6, (avail_w + spacing) // (min_card_w + spacing)))
-        columns = int(columns)
-        if columns != self._columns:
-            self._columns = columns
+        max_by_width = max(base_min, int((avail_w + spacing_h) // (min_card_w + spacing_h)))
+        max_by_width = min(3, max_by_width)
+        # Elegir columnas que den mayor altura por fila
+        best_c = self._columns
+        best_h = -1
+        total = len(self.tunnels)
+        avail_h = max(0, self.height() - (m.top() + m.bottom()))
+        # Estimación de altura mínima legible por tarjeta
+        est_min_card_h = 40 + 20 + 5 * 26 + 3 * (self._grid.verticalSpacing() or 10)
+        for c in range(base_min, max_by_width + 1):
+            rows = max(1, (total + c - 1) // c)
+            row_h = int((avail_h - spacing_v * (rows - 1)) // rows)
+            # Preferir configuraciones que cumplan el mínimo; si varias cumplen, escoger mayor row_h
+            score = row_h if row_h >= est_min_card_h else row_h - est_min_card_h
+            if score > best_h:
+                best_h = score
+                best_c = c
+        if best_c != self._columns:
+            self._columns = best_c
             self._reflow_grid()
 
     def _apply_uniform_sizes(self):
@@ -92,8 +112,8 @@ class DashboardView(QWidget):
         m = self._grid.contentsMargins()
         spacing = self._grid.verticalSpacing() or 0
         avail_h = max(0, self.height() - (m.top() + m.bottom()) - spacing * (rows - 1))
-        # Altura objetivo por tarjeta para que TODAS quepan sin scroll
-        row_h = max(120, avail_h // rows)
+        # Ajustar altura objetivo para que TODAS las filas quepan sin scroll (sin mínimos forzados)
+        row_h = int(avail_h // max(1, rows))
         for r in range(rows):
             self._grid.setRowMinimumHeight(r, int(row_h))
         # Aplicar a cada tarjeta y dejar que se adapte internamente

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal, pyqtSlot
+from time import time
 
 from .models import TunnelConfig, TunnelData
 from .plc_client import BasePLC
@@ -23,6 +24,8 @@ class Poller(QObject):
         self._timer: Optional[QTimer] = None
         self._running = False
         self._last_status: Optional[bool] = None
+        # Seguimiento de tiempo de enfriamiento (inicio del ciclo ON por túnel)
+        self._on_since: Dict[int, Optional[float]] = {}
 
     @pyqtSlot()
     def start(self):
@@ -54,6 +57,20 @@ class Poller(QObject):
             status = self.plc.is_connected()
             self._emit_status(status)
             if data:
+                # Calcular tiempo de enfriamiento por túnel
+                now = time()
+                for tid, td in data.items():
+                    if td.estado:
+                        start = self._on_since.get(tid)
+                        if not start:
+                            # iniciar ciclo ON ahora
+                            self._on_since[tid] = now
+                            start = now
+                        td.tiempo_enfriamiento = max(0.0, float(now - start))
+                    else:
+                        # reset si está apagado
+                        self._on_since[tid] = None
+                        td.tiempo_enfriamiento = 0.0
                 self.updated.emit(data)
             if not status:
                 # Enviar último error si disponible
