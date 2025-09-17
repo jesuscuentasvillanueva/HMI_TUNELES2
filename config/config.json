@@ -199,8 +199,8 @@
       "name": "Túnel 3",
       "tags": {
         "temp_ambiente": {
-          "db": 103,
-          "start": 0,
+          "db": 9,
+          "start": 278,
           "type": "REAL",
           "bit": 0,
           "area": "DB"
@@ -226,10 +226,108 @@
           "bit": 0,
           "area": "DB"
         },
+        "setpoint_pulpa1": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "setpoint_pulpa2": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
         "estado": {
           "db": 303,
           "start": 0,
           "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cmd_encender": {
+          "db": 1,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cmd_apagar": {
+          "db": 1,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "deshielo_activo": {
+          "db": 1,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cmd_deshielo": {
+          "db": 1,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cmd_deshielo_on": {
+          "db": 1,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cmd_deshielo_off": {
+          "db": 1,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cmd_cancelar_deshielo": {
+          "db": 1,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cmd_parar_deshielo": {
+          "db": 1,
+          "start": 0,
+          "type": "BOOL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "valvula_posicion": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cal_temp_ambiente": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cal_temp_pulpa1": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
+          "bit": 0,
+          "area": "DB"
+        },
+        "cal_temp_pulpa2": {
+          "db": 1,
+          "start": 0,
+          "type": "REAL",
           "bit": 0,
           "area": "DB"
         }
@@ -705,6 +803,7 @@
   ],
   "ui": {
     "sec_sp_adv_open": false,
-    "sec_cal_open": false
+    "sec_cal_open": false,
+    "dashboard_visible_tunnels": 14
   }
 }

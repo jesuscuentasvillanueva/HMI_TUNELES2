@@ -20,6 +20,8 @@ class SettingsView(QWidget):
     apply_settings = pyqtSignal(object)
     back = pyqtSignal()
     test_connection = pyqtSignal(object)
+    # Reutiliza el mismo patrón que el DetailView para guardar prefs UI
+    update_ui_pref = pyqtSignal(str, object)
 
     def __init__(self, plc_cfg: PLCConfig):
         super().__init__()
@@ -52,6 +54,10 @@ class SettingsView(QWidget):
 
         self.chk_sim = QCheckBox("Simulación")
 
+        # Preferencias de UI
+        self.sp_visible = QSpinBox()
+        self.sp_visible.setRange(1, 200)
+
         def add_row(label: str, w):
             row = QHBoxLayout()
             row.addWidget(QLabel(label))
@@ -64,6 +70,9 @@ class SettingsView(QWidget):
         add_row("Puerto:", self.sp_port)
         add_row("Intervalo (ms):", self.sp_poll)
         add_row("Modo:", self.chk_sim)
+        layout.addSpacing(8)
+        layout.addWidget(QLabel("Preferencias de Interfaz"))
+        add_row("Túneles visibles:", self.sp_visible)
 
         # Botones
         btns = QHBoxLayout()
@@ -95,6 +104,19 @@ class SettingsView(QWidget):
         self.sp_poll.setValue(cfg.poll_interval_ms)
         self.chk_sim.setChecked(cfg.simulation)
 
+    def set_ui_prefs(self, ui: dict, total_tunnels: int):
+        try:
+            total = max(1, int(total_tunnels))
+            self.sp_visible.setRange(1, total)
+            val = int(ui.get("dashboard_visible_tunnels", total) or total)
+            if val < 1:
+                val = total
+            val = min(max(1, val), total)
+            self.sp_visible.setValue(val)
+        except Exception:
+            # fallback seguro
+            self.sp_visible.setValue(max(1, int(total_tunnels) if total_tunnels else 1))
+
     def _emit_apply(self):
         cfg = PLCConfig(
             ip=self.ed_ip.text().strip() or "192.168.0.1",
@@ -105,6 +127,11 @@ class SettingsView(QWidget):
             simulation=bool(self.chk_sim.isChecked()),
         )
         self.apply_settings.emit(cfg)
+        # Emitir preferencia de UI (túneles visibles)
+        try:
+            self.update_ui_pref.emit("dashboard_visible_tunnels", int(self.sp_visible.value()))
+        except Exception:
+            pass
 
     def _emit_test(self):
         cfg = PLCConfig(

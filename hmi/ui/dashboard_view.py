@@ -18,6 +18,8 @@ class DashboardView(QWidget):
         self.tunnels = tunnels
         # Modo densidad (compacto por defecto para ver todo de un vistazo)
         self._compact = True
+        # Límite de túneles visibles (None = todos)
+        self._visible_limit = None
         # Crear tarjetas una sola vez y reutilizarlas al reordenar
         self.cards: Dict[int, TunnelCard] = {}
         for t in self.tunnels:
@@ -61,7 +63,11 @@ class DashboardView(QWidget):
     def _reflow_grid(self):
         self._clear_grid()
         columns = max(1, self._columns)
-        for idx, t in enumerate(self.tunnels):
+        total = len(self.tunnels)
+        limit = int(self._visible_limit) if self._visible_limit else total
+        limit = max(1, min(limit, total))
+        tunnels_to_show = self.tunnels[:limit]
+        for idx, t in enumerate(tunnels_to_show):
             r = idx // columns
             c = idx % columns
             self._grid.addWidget(self.cards[t.id], r, c)
@@ -86,7 +92,8 @@ class DashboardView(QWidget):
         # Elegir columnas que den mayor altura por fila
         best_c = self._columns
         best_h = -1
-        total = len(self.tunnels)
+        total_all = len(self.tunnels)
+        total = min(total_all, int(self._visible_limit) if self._visible_limit else total_all)
         avail_h = max(0, self.height() - (m.top() + m.bottom()))
         # Estimación de altura mínima legible por tarjeta
         est_min_card_h = 40 + 20 + 5 * 26 + 3 * (self._grid.verticalSpacing() or 10)
@@ -106,7 +113,9 @@ class DashboardView(QWidget):
         if not hasattr(self, "_grid"):
             return
         columns = max(1, self._columns)
-        rows = (len(self.tunnels) + columns - 1) // columns
+        total_all = len(self.tunnels)
+        total = min(total_all, int(self._visible_limit) if self._visible_limit else total_all)
+        rows = (total + columns - 1) // columns
         if rows <= 0:
             return
         m = self._grid.contentsMargins()
@@ -117,13 +126,32 @@ class DashboardView(QWidget):
         for r in range(rows):
             self._grid.setRowMinimumHeight(r, int(row_h))
         # Aplicar a cada tarjeta y dejar que se adapte internamente
-        for card in self.cards.values():
+        # Solo las visibles en el grid necesitan forzar altura; las no visibles no están en el layout
+        total_cards = total
+        # Recorremos las tarjetas agregadas al grid
+        for idx, t in enumerate(self.tunnels[:total_cards]):
+            card = self.cards.get(t.id)
+            if not card:
+                continue
             try:
                 if hasattr(card, "apply_target_height"):
                     card.apply_target_height(int(row_h))
                 card.setFixedHeight(int(row_h))
             except Exception:
                 pass
+
+    def set_visible_limit(self, n: int | None):
+        try:
+            if n is None:
+                self._visible_limit = None
+            else:
+                total = len(self.tunnels)
+                self._visible_limit = int(max(1, min(int(n), total)))
+        except Exception:
+            self._visible_limit = None
+        self._reflow_grid()
+        self._update_columns()
+        self._apply_uniform_sizes()
 
     def _update_container_min_height(self):
         return

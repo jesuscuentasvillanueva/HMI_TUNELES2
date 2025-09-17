@@ -103,6 +103,11 @@ class MainWindow(QMainWindow):
         self._cfg_manager = ConfigManager()
         self._app_cfg = self._cfg_manager.load_or_create_default()
         self.view_settings = SettingsView(self._app_cfg.plc)
+        # Inicializar preferencias de UI en Settings (número de túneles visibles)
+        try:
+            self.view_settings.set_ui_prefs(self._app_cfg.ui, len(self.tunnels))
+        except Exception:
+            pass
 
         self.stack.addWidget(self.view_dashboard)  # index 0
         self.stack.addWidget(self.view_detail)     # index 1
@@ -141,6 +146,11 @@ class MainWindow(QMainWindow):
             self.view_detail.update_ui_pref.connect(self._on_update_ui_pref)
         except Exception:
             pass
+        # Escuchar cambios de preferencias desde Settings y aplicarlos al dashboard
+        try:
+            self.view_settings.update_ui_pref.connect(self._on_update_ui_pref)
+        except Exception:
+            pass
 
         # Aplicación de configuración
         self.view_settings.apply_settings.connect(self._apply_settings_and_back)
@@ -148,6 +158,13 @@ class MainWindow(QMainWindow):
         # Estado inicial
         self.on_plc_status(initial_plc_connected)
         self._navigate(0)
+        # Aplicar límite de túneles visibles si está configurado
+        try:
+            vis = self._app_cfg.ui.get("dashboard_visible_tunnels")
+            if vis is not None and hasattr(self.view_dashboard, "set_visible_limit"):
+                self.view_dashboard.set_visible_limit(int(vis))
+        except Exception:
+            pass
 
         # Iniciar reloj en top bar
         self._clock_timer = QTimer(self)
@@ -201,6 +218,13 @@ class MainWindow(QMainWindow):
             self._cfg_manager.save(self._app_cfg)
         except Exception:
             pass
+        # Aplicar si es la preferencia de túneles visibles
+        if key == "dashboard_visible_tunnels":
+            try:
+                if hasattr(self.view_dashboard, "set_visible_limit"):
+                    self.view_dashboard.set_visible_limit(int(value))
+            except Exception:
+                pass
         # Si estamos en el detalle y hay datos del túnel actual, refrescar
         if self._current_tunnel_id and self._current_tunnel_id in self._last_data:
             try:
