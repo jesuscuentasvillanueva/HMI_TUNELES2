@@ -189,6 +189,14 @@ class MainWindow(QMainWindow):
         self._current_tunnel_id = tunnel_id
         cfg = self.tunnels_map.get(tunnel_id)
         if cfg:
+            # Ajustar el nombre visible según la nomenclatura del tablero
+            try:
+                if hasattr(self.view_dashboard, "get_display_name_for"):
+                    disp = self.view_dashboard.get_display_name_for(tunnel_id)
+                    if hasattr(self.view_detail, "set_display_name"):
+                        self.view_detail.set_display_name(disp)
+            except Exception:
+                pass
             self.view_detail.set_tunnel(cfg)
             # si hay datos recientes, actualizamos inmediatamente
             if tunnel_id in self._last_data:
@@ -244,6 +252,13 @@ class MainWindow(QMainWindow):
                 pass
         # Si estamos en el detalle y hay datos del túnel actual, refrescar
         if self._current_tunnel_id and self._current_tunnel_id in self._last_data:
+            # Volver a aplicar el nombre visible según la nomenclatura activa
+            try:
+                if hasattr(self.view_dashboard, "get_display_name_for") and hasattr(self.view_detail, "set_display_name"):
+                    disp = self.view_dashboard.get_display_name_for(self._current_tunnel_id)
+                    self.view_detail.set_display_name(disp)
+            except Exception:
+                pass
             try:
                 self.view_detail.update_data(self._last_data[self._current_tunnel_id])
             except Exception:

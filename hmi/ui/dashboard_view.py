@@ -209,6 +209,24 @@ class DashboardView(QWidget):
     def _update_container_min_height(self):
         return
 
+    # Nombre visible según nomenclatura activa (rango) o nombre real
+    def get_display_name_for(self, tunnel_id: int) -> str:
+        try:
+            vt = self._visible_tunnels()
+            for idx, t in enumerate(vt):
+                if t.id == tunnel_id:
+                    if self._range_from is not None and self._range_to is not None:
+                        start = max(1, int(self._range_from))
+                        return f"Túnel {start + idx}"
+                    return t.name
+            # fallback: buscar en todos
+            for t in self.tunnels:
+                if t.id == tunnel_id:
+                    return t.name
+        except Exception:
+            pass
+        return f"Túnel {tunnel_id}"
+
     def set_density(self, compact: bool):
         self._compact = bool(compact)
         for card in self.cards.values():

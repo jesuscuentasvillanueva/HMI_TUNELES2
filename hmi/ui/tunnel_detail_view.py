@@ -23,6 +23,7 @@ class TunnelDetailView(QWidget):
     def __init__(self):
         super().__init__()
         self.config: Optional[TunnelConfig] = None
+        self._display_name: Optional[str] = None
         # No mostrar direcciones de memoria (badges) en esta pantalla
         self._show_tag_badges: bool = False
         # Flags para no sobreescribir valores mientras el usuario edita
@@ -396,9 +397,20 @@ class TunnelDetailView(QWidget):
         # Refrescar resúmenes
         self._update_section_summaries()
 
+    def set_display_name(self, name: str):
+        try:
+            self._display_name = str(name)
+            self.lbl_title.setText(self._display_name)
+        except Exception:
+            pass
+
     def set_tunnel(self, config: TunnelConfig):
         self.config = config
-        self.lbl_title.setText(config.name)
+        try:
+            name_to_show = self._display_name if self._display_name else config.name
+            self.lbl_title.setText(name_to_show)
+        except Exception:
+            self.lbl_title.setText(config.name)
         # No mostrar direcciones de memoria en esta pantalla
         self._update_tag_badges()
         # Precargar calibraciones si existen
