@@ -165,6 +165,14 @@ class MainWindow(QMainWindow):
                 self.view_dashboard.set_visible_limit(int(vis))
         except Exception:
             pass
+        # Aplicar rango si fue persistido (tiene prioridad sobre límite)
+        try:
+            a = self._app_cfg.ui.get("dashboard_range_from")
+            b = self._app_cfg.ui.get("dashboard_range_to")
+            if a is not None and b is not None and hasattr(self.view_dashboard, "set_visible_range"):
+                self.view_dashboard.set_visible_range(int(a), int(b))
+        except Exception:
+            pass
 
         # Iniciar reloj en top bar
         self._clock_timer = QTimer(self)
@@ -223,6 +231,15 @@ class MainWindow(QMainWindow):
             try:
                 if hasattr(self.view_dashboard, "set_visible_limit"):
                     self.view_dashboard.set_visible_limit(int(value))
+            except Exception:
+                pass
+        # Aplicar rango (tiene prioridad sobre límite)
+        if key in ("dashboard_range_from", "dashboard_range_to"):
+            try:
+                a = self._app_cfg.ui.get("dashboard_range_from")
+                b = self._app_cfg.ui.get("dashboard_range_to")
+                if a is not None and b is not None and hasattr(self.view_dashboard, "set_visible_range"):
+                    self.view_dashboard.set_visible_range(int(a), int(b))
             except Exception:
                 pass
         # Si estamos en el detalle y hay datos del túnel actual, refrescar

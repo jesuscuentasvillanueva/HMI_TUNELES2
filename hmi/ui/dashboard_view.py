@@ -20,6 +20,9 @@ class DashboardView(QWidget):
         self._compact = True
         # Límite de túneles visibles (None = todos)
         self._visible_limit = None
+        # Rango visible (1-indexed, inclusive). Si se define, tiene prioridad sobre el límite.
+        self._range_from = None
+        self._range_to = None
         # Crear tarjetas una sola vez y reutilizarlas al reordenar
         self.cards: Dict[int, TunnelCard] = {}
         for t in self.tunnels:
@@ -66,13 +69,28 @@ class DashboardView(QWidget):
         except Exception:
             pass
 
+    def _visible_tunnels(self) -> List[TunnelConfig]:
+        total = len(self.tunnels)
+        # Aplicar rango si está definido y válido
+        if self._range_from is not None and self._range_to is not None and total > 0:
+            a = max(1, int(self._range_from))
+            b = max(1, int(self._range_to))
+            if a > b:
+                a, b = b, a
+            # Cantidad a mostrar según nomenclatura solicitada, pero limitada a los túneles físicos
+            count = max(1, b - a + 1)
+            count = min(count, total)
+            return self.tunnels[:count]
+        # Si no hay rango, aplicar límite simple (primeros N)
+        if self._visible_limit:
+            limit = int(max(1, min(int(self._visible_limit), total)))
+            return self.tunnels[:limit]
+        return list(self.tunnels)
+
     def _reflow_grid(self):
         self._clear_grid()
         columns = max(1, self._columns)
-        total = len(self.tunnels)
-        limit = int(self._visible_limit) if self._visible_limit else total
-        limit = max(1, min(limit, total))
-        tunnels_to_show = self.tunnels[:limit]
+        tunnels_to_show = self._visible_tunnels()
         visible_ids = {t.id for t in tunnels_to_show}
         # Mostrar/ocultar según el conjunto visible actual
         for tid, card in self.cards.items():
@@ -80,10 +98,21 @@ class DashboardView(QWidget):
                 card.show()
             else:
                 card.hide()
+        # Asignar nombres visibles (nomenclatura) si hay rango definido, o restaurar nombres reales
+        range_active = (self._range_from is not None and self._range_to is not None)
+        start_num = max(1, int(self._range_from)) if range_active else None
         for idx, t in enumerate(tunnels_to_show):
             r = idx // columns
             c = idx % columns
-            self._grid.addWidget(self.cards[t.id], r, c)
+            card = self.cards[t.id]
+            try:
+                if range_active and start_num is not None and hasattr(card, "set_display_name"):
+                    card.set_display_name(f"Túnel {start_num + idx}")
+                elif hasattr(card, "set_display_name"):
+                    card.set_display_name(t.name)
+            except Exception:
+                pass
+            self._grid.addWidget(card, r, c)
         # Estirar solo columnas
         for c in range(max(1, columns)):
             self._grid.setColumnStretch(c, 1)
@@ -98,8 +127,7 @@ class DashboardView(QWidget):
         min_card_w = 200 if self._compact else 260
         if avail_w <= 0:
             return
-        total_all = len(self.tunnels)
-        total = min(total_all, int(self._visible_limit) if self._visible_limit else total_all)
+        total = len(self._visible_tunnels())
         # Base mínima de columnas: 3 en compacto, 4 normal, pero nunca mayor que el total visible
         base_min = min(max(1, total), (3 if self._compact else 4))
         cols_by_width = max(base_min, int((avail_w + spacing_h) // (min_card_w + spacing_h)))
@@ -113,8 +141,7 @@ class DashboardView(QWidget):
         if not hasattr(self, "_grid"):
             return
         columns = max(1, self._columns)
-        total_all = len(self.tunnels)
-        total = min(total_all, int(self._visible_limit) if self._visible_limit else total_all)
+        total = len(self._visible_tunnels())
         rows = (total + columns - 1) // columns
         if rows <= 0:
             return
@@ -130,9 +157,8 @@ class DashboardView(QWidget):
             self._grid.setRowMinimumHeight(r, int(row_h))
         # Aplicar a cada tarjeta y dejar que se adapte internamente
         # Solo las visibles en el grid necesitan forzar altura; las no visibles no están en el layout
-        total_cards = total
         # Recorremos las tarjetas agregadas al grid
-        for idx, t in enumerate(self.tunnels[:total_cards]):
+        for idx, t in enumerate(self._visible_tunnels()):
             card = self.cards.get(t.id)
             if not card:
                 continue
@@ -153,6 +179,29 @@ class DashboardView(QWidget):
         except Exception:
             self._visible_limit = None
         # Primero recalcular columnas en base al nuevo total visible, luego reflujo y tamaños
+        self._update_columns()
+        self._reflow_grid()
+        self._apply_uniform_sizes()
+
+    def set_visible_range(self, a=None, b=None):
+        try:
+            total = len(self.tunnels)
+            if a is None or b is None:
+                self._range_from = None
+                self._range_to = None
+            else:
+                aa = int(a); bb = int(b)
+                if aa > bb:
+                    aa, bb = bb, aa
+                # Solo asegurar límite inferior; el superior puede exceder para nomenclatura
+                aa = max(1, aa)
+                bb = max(1, bb)
+                self._range_from = aa
+                self._range_to = bb
+        except Exception:
+            self._range_from = None
+            self._range_to = None
+        # Cambió el conjunto visible -> recalcular todo
         self._update_columns()
         self._reflow_grid()
         self._apply_uniform_sizes()

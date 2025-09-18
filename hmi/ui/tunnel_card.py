@@ -14,6 +14,7 @@ class TunnelCard(QFrame):
         super().__init__()
         self.setObjectName("TunnelCard")
         self.config = config
+        self._display_name = config.name
         self.setCursor(Qt.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self._min_h_cache = 0
@@ -113,7 +114,7 @@ class TunnelCard(QFrame):
                 state_text = "Apag." if compact else "Apagado"
             state_prop = "on" if data.estado else "off"
         self.setToolTip(
-            f"{self.config.name}\nAmbiente: {data.temp_ambiente:.1f} °C\nPulpa 1: {data.temp_pulpa1:.1f} °C\nPulpa 2: {data.temp_pulpa2:.1f} °C\nSetpoint: {data.setpoint:.1f} °C\nEstado: {state_text}"
+            f"{self._display_name}\nAmbiente: {data.temp_ambiente:.1f} °C\nPulpa 1: {data.temp_pulpa1:.1f} °C\nPulpa 2: {data.temp_pulpa2:.1f} °C\nSetpoint: {data.setpoint:.1f} °C\nEstado: {state_text}"
         )
         self.state_tag.setText(state_text)
         self.state_tag.setProperty("state", state_prop)
@@ -131,6 +132,14 @@ class TunnelCard(QFrame):
         self.style().unpolish(self)
         self.style().polish(self)
         self.update()
+
+    # Permite sobreescribir el nombre mostrado (nomenclatura)
+    def set_display_name(self, name: str):
+        try:
+            self._display_name = str(name)
+            self.title.setText(self._display_name)
+        except Exception:
+            pass
 
     def set_density(self, compact: bool):
         # Ajusta propiedades y espaciados para modo compacto

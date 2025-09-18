@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QDoubleSpinBox, QGridLayout, QSizePolicy, QDialog, QFormLayout, QSpinBox, QComboBox, QInputDialog, QMessageBox, QLineEdit, QFrame, QToolButton, QScrollArea
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QDoubleSpinBox, QGridLayout, QSizePolicy, QDialog, QFormLayout, QSpinBox, QComboBox, QInputDialog, QMessageBox, QLineEdit, QFrame, QToolButton, QScrollArea, QScroller, QScrollerProperties
 
 from ..models import TunnelConfig, TunnelData, TagAddress
 from typing import Optional
@@ -45,6 +45,12 @@ class TunnelDetailView(QWidget):
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QFrame.NoFrame)
+        # Scroll táctil cómodo
+        try:
+            self.scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+            self.scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        except Exception:
+            pass
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(16, 12, 16, 12)
@@ -355,6 +361,25 @@ class TunnelDetailView(QWidget):
         # Montar el contenido dentro del scroll
         self.scroll.setWidget(page)
         root_layout.addWidget(self.scroll)
+        # Activar scroll cinético para pantallas táctiles
+        self._setup_kinetic_scroll()
+
+    def _setup_kinetic_scroll(self):
+        try:
+            vp = self.scroll.viewport()
+            # Gestos táctiles y también con botón izquierdo para trackpads/ratón
+            QScroller.grabGesture(vp, QScroller.LeftMouseButtonGesture)
+            QScroller.grabGesture(vp, QScroller.TouchGesture)
+            scroller = QScroller.scroller(vp)
+            props = scroller.scrollerProperties()
+            # Suavizar el desplazamiento y facilitar el gesto
+            props.setScrollMetric(QScrollerProperties.DecelerationFactor, 0.07)
+            props.setScrollMetric(QScrollerProperties.DragStartDistance, 0.001)
+            props.setScrollMetric(QScrollerProperties.MaximumVelocity, 0.6)
+            props.setScrollMetric(QScrollerProperties.AxisLockThreshold, 0.75)
+            scroller.setScrollerProperties(props)
+        except Exception:
+            pass
 
     def apply_ui_prefs(self, ui: dict):
         # Restaurar estado colapsado

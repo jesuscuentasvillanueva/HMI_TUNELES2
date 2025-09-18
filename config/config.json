@@ -802,8 +802,10 @@
     }
   ],
   "ui": {
-    "sec_sp_adv_open": true,
-    "sec_cal_open": true,
-    "dashboard_visible_tunnels": 12
+    "sec_sp_adv_open": false,
+    "sec_cal_open": false,
+    "dashboard_visible_tunnels": 14,
+    "dashboard_range_from": 10,
+    "dashboard_range_to": 23
   }
 }

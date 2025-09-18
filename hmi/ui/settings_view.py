@@ -57,6 +57,10 @@ class SettingsView(QWidget):
         # Preferencias de UI
         self.sp_visible = QSpinBox()
         self.sp_visible.setRange(1, 200)
+        self.sp_from = QSpinBox()
+        self.sp_from.setRange(1, 200)
+        self.sp_count = QSpinBox()
+        self.sp_count.setRange(1, 200)
 
         def add_row(label: str, w):
             row = QHBoxLayout()
@@ -73,6 +77,8 @@ class SettingsView(QWidget):
         layout.addSpacing(8)
         layout.addWidget(QLabel("Preferencias de Interfaz"))
         add_row("Túneles visibles:", self.sp_visible)
+        add_row("Desde túnel:", self.sp_from)
+        add_row("Cantidad:", self.sp_count)
 
         # Botones
         btns = QHBoxLayout()
@@ -113,9 +119,36 @@ class SettingsView(QWidget):
                 val = total
             val = min(max(1, val), total)
             self.sp_visible.setValue(val)
+            # Rango desde (no se clampa a total para permitir nomenclaturas > total)
+            self.sp_count.setRange(1, total)
+            a = ui.get("dashboard_range_from")
+            b = ui.get("dashboard_range_to")
+            if a is not None and b is not None:
+                try:
+                    aa = max(1, int(a))  # no clamp superior
+                    bb = max(1, int(b))  # no clamp superior
+                    cnt = max(1, min(bb - aa + 1, total))
+                    self.sp_from.setValue(aa)
+                    self.sp_count.setValue(cnt)
+                except Exception:
+                    self.sp_from.setValue(1)
+                    self.sp_count.setValue(total)
+            else:
+                # Por defecto sin rango: todo
+                self.sp_from.setValue(1)
+                # Si hay visible explícito, úsalo como cantidad por defecto
+                try:
+                    self.sp_count.setValue(int(val))
+                except Exception:
+                    self.sp_count.setValue(total)
         except Exception:
             # fallback seguro
             self.sp_visible.setValue(max(1, int(total_tunnels) if total_tunnels else 1))
+            try:
+                self.sp_from.setValue(1)
+                self.sp_count.setValue(max(1, int(total_tunnels) if total_tunnels else 1))
+            except Exception:
+                pass
 
     def _emit_apply(self):
         cfg = PLCConfig(
@@ -127,9 +160,18 @@ class SettingsView(QWidget):
             simulation=bool(self.chk_sim.isChecked()),
         )
         self.apply_settings.emit(cfg)
-        # Emitir preferencia de UI (túneles visibles)
+        # Sincronizar visibles con Cantidad (consistencia de lo que realmente se muestra)
         try:
-            self.update_ui_pref.emit("dashboard_visible_tunnels", int(self.sp_visible.value()))
+            self.update_ui_pref.emit("dashboard_visible_tunnels", int(self.sp_count.value()))
+        except Exception:
+            pass
+        # Emitir rango de túneles (desde/hasta)
+        try:
+            a = int(self.sp_from.value())
+            cnt = int(self.sp_count.value())
+            b = max(a, a + cnt - 1)
+            self.update_ui_pref.emit("dashboard_range_from", a)
+            self.update_ui_pref.emit("dashboard_range_to", b)
         except Exception:
             pass
 
