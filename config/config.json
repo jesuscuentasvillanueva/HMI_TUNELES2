@@ -804,8 +804,8 @@
   "ui": {
     "sec_sp_adv_open": false,
     "sec_cal_open": false,
-    "dashboard_visible_tunnels": 14,
-    "dashboard_range_from": 10,
-    "dashboard_range_to": 23
+    "dashboard_visible_tunnels": 12,
+    "dashboard_range_from": 1,
+    "dashboard_range_to": 12
   }
 }
