@@ -59,6 +59,12 @@ class DashboardView(QWidget):
             w = item.widget()
             if w is not None:
                 self._grid.removeWidget(w)
+        # Resetear alturas de filas previas para evitar residuos
+        try:
+            for r in range(0, 50):
+                self._grid.setRowMinimumHeight(r, 0)
+        except Exception:
+            pass
 
     def _reflow_grid(self):
         self._clear_grid()
@@ -67,6 +73,13 @@ class DashboardView(QWidget):
         limit = int(self._visible_limit) if self._visible_limit else total
         limit = max(1, min(limit, total))
         tunnels_to_show = self.tunnels[:limit]
+        visible_ids = {t.id for t in tunnels_to_show}
+        # Mostrar/ocultar según el conjunto visible actual
+        for tid, card in self.cards.items():
+            if tid in visible_ids:
+                card.show()
+            else:
+                card.hide()
         for idx, t in enumerate(tunnels_to_show):
             r = idx // columns
             c = idx % columns
@@ -77,36 +90,23 @@ class DashboardView(QWidget):
         self._apply_uniform_sizes()
 
     def _update_columns(self):
-        # Calcular columnas en función del ancho disponible, maximizando altura de fila legible
+        # Calcular columnas principalmente por ancho disponible, con límites razonables
         m = self._grid.contentsMargins()
         avail_w = max(0, self.width() - (m.left() + m.right()))
         spacing_h = self._grid.horizontalSpacing() or 0
-        spacing_v = self._grid.verticalSpacing() or 0
-        # Requisitos mínimos de ancho por tarjeta
+        # Requisitos mínimos de ancho por tarjeta (compacto permite algo más angosto)
         min_card_w = 200 if self._compact else 260
         if avail_w <= 0:
             return
-        base_min = 3 if self._compact else 4
-        max_by_width = max(base_min, int((avail_w + spacing_h) // (min_card_w + spacing_h)))
-        max_by_width = min(3, max_by_width)
-        # Elegir columnas que den mayor altura por fila
-        best_c = self._columns
-        best_h = -1
         total_all = len(self.tunnels)
         total = min(total_all, int(self._visible_limit) if self._visible_limit else total_all)
-        avail_h = max(0, self.height() - (m.top() + m.bottom()))
-        # Estimación de altura mínima legible por tarjeta
-        est_min_card_h = 40 + 20 + 5 * 26 + 3 * (self._grid.verticalSpacing() or 10)
-        for c in range(base_min, max_by_width + 1):
-            rows = max(1, (total + c - 1) // c)
-            row_h = int((avail_h - spacing_v * (rows - 1)) // rows)
-            # Preferir configuraciones que cumplan el mínimo; si varias cumplen, escoger mayor row_h
-            score = row_h if row_h >= est_min_card_h else row_h - est_min_card_h
-            if score > best_h:
-                best_h = score
-                best_c = c
-        if best_c != self._columns:
-            self._columns = best_c
+        # Base mínima de columnas: 3 en compacto, 4 normal, pero nunca mayor que el total visible
+        base_min = min(max(1, total), (3 if self._compact else 4))
+        cols_by_width = max(base_min, int((avail_w + spacing_h) // (min_card_w + spacing_h)))
+        # No más columnas que túneles visibles, y no más de 4 en total (legibilidad)
+        columns = int(min(cols_by_width, max(1, total), 4))
+        if columns != self._columns:
+            self._columns = columns
             self._reflow_grid()
 
     def _apply_uniform_sizes(self):
@@ -122,7 +122,10 @@ class DashboardView(QWidget):
         spacing = self._grid.verticalSpacing() or 0
         avail_h = max(0, self.height() - (m.top() + m.bottom()) - spacing * (rows - 1))
         # Ajustar altura objetivo para que TODAS las filas quepan sin scroll (sin mínimos forzados)
-        row_h = int(avail_h // max(1, rows))
+        row_h_raw = int(avail_h // max(1, rows))
+        # Limitar altura máxima de tarjeta para evitar sobredimensionamiento cuando hay pocas tarjetas
+        target_max = 320
+        row_h = min(row_h_raw, target_max)
         for r in range(rows):
             self._grid.setRowMinimumHeight(r, int(row_h))
         # Aplicar a cada tarjeta y dejar que se adapte internamente
@@ -140,7 +143,7 @@ class DashboardView(QWidget):
             except Exception:
                 pass
 
-    def set_visible_limit(self, n: int | None):
+    def set_visible_limit(self, n=None):
         try:
             if n is None:
                 self._visible_limit = None
@@ -149,8 +152,9 @@ class DashboardView(QWidget):
                 self._visible_limit = int(max(1, min(int(n), total)))
         except Exception:
             self._visible_limit = None
-        self._reflow_grid()
+        # Primero recalcular columnas en base al nuevo total visible, luego reflujo y tamaños
         self._update_columns()
+        self._reflow_grid()
         self._apply_uniform_sizes()
 
     def _update_container_min_height(self):
